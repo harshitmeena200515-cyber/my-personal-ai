@@ -4,7 +4,7 @@ from typing import Optional
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "MY PERSONAL AI"
-    VERSION: str = "0.1.0"
+    VERSION: str = "0.3.0"
     HOST: str = "127.0.0.1"
     PORT: int = 8000
     DEBUG: bool = True

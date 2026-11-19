@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MY PERSONAL AI — Local Workspace</title>
+  <title>MY PERSONAL AI — Autonomous Workspace</title>
   <style>
     :root {
       --bg: #0f1117;
@@ -16,6 +16,8 @@
       --user-msg: #1e3a8a;
       --ai-msg: #1e2230;
       --accent: #10b981;
+      --purple: #8b5cf6;
+      --amber: #f59e0b;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -28,12 +30,14 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
     }
     .logo-group { display: flex; align-items: center; gap: 12px; }
-    .logo-badge { background: var(--primary); color: white; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 13px; }
+    .logo-badge { background: var(--purple); color: white; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 13px; letter-spacing: 0.5px; }
     .title { font-size: 17px; font-weight: 600; }
     
-    .status-group { display: flex; align-items: center; gap: 16px; font-size: 13px; }
+    .status-group { display: flex; align-items: center; gap: 12px; font-size: 13px; flex-wrap: wrap; }
     .status-pill {
       display: flex;
       align-items: center;
@@ -44,7 +48,47 @@
       color: var(--accent);
       border: 1px solid rgba(16, 185, 129, 0.2);
     }
+    .tools-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(139, 92, 246, 0.1);
+      color: var(--purple);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      cursor: pointer;
+    }
     .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+
+    .mode-switch {
+      display: flex;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .mode-btn.active {
+      background: var(--card-bg);
+      color: var(--text);
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    .mode-btn.active.brain {
+      color: var(--purple);
+    }
 
     select.model-select {
       background: var(--bg);
@@ -92,7 +136,25 @@
       border: 1px solid var(--border);
       border-bottom-left-radius: 2px;
     }
-    .msg-header { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 600; }
+    .msg-header {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brain-badge {
+      font-size: 10px;
+      background: rgba(139, 92, 246, 0.2);
+      color: var(--purple);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      text-transform: none;
+    }
     .msg-content pre {
       background: #090a0f;
       padding: 12px;
@@ -110,6 +172,44 @@
       border-radius: 4px;
     }
 
+    /* Thought/Reasoning progress box */
+    .thought-card {
+      background: rgba(139, 92, 246, 0.05);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      font-size: 12.5px;
+    }
+    .thought-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      color: var(--purple);
+      margin-bottom: 6px;
+    }
+    .thought-progress-bar {
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+      margin: 6px 0;
+    }
+    .thought-progress-fill {
+      height: 100%;
+      background: var(--purple);
+      width: 0%;
+      transition: width 0.3s;
+    }
+    .thought-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      color: var(--text-muted);
+      font-size: 11.5px;
+    }
+
     .msg-metrics {
       margin-top: 8px;
       padding-top: 6px;
@@ -118,6 +218,7 @@
       color: var(--text-muted);
       display: flex;
       gap: 12px;
+      flex-wrap: wrap;
     }
 
     footer {
@@ -173,12 +274,18 @@
 
 <header>
   <div class="logo-group">
-    <div class="logo-badge">LOCAL AI</div>
+    <div class="logo-badge">BRAIN v0.3.0</div>
     <div class="title">MY PERSONAL AI</div>
   </div>
   <div class="status-group">
-    <div class="status-pill"><div class="dot"></div> 100% Offline (Localhost)</div>
-    <div style="color: var(--text-muted);">RTX 3050 (4GB)</div>
+    <div class="mode-switch">
+      <button id="modeBrain" class="mode-btn active brain">🧠 Autonomous Brain</button>
+      <button id="modeChat" class="mode-btn">⚡ Direct Chat</button>
+    </div>
+    <div id="toolsBadge" class="tools-pill" title="5 Sandboxed Tools: Calculator, File Reader, Code Analyzer, System Info, DateTime">
+      🔧 5 Tools Active
+    </div>
+    <div class="status-pill"><div class="dot"></div> 100% Offline</div>
     <select id="modelSelect" class="model-select">
       <option value="">Loading local models...</option>
     </select>
@@ -187,20 +294,34 @@
 
 <main id="chatWindow">
   <div class="message assistant-message">
-    <div class="msg-header">System</div>
-    <div class="msg-content">Welcome to <strong>MY PERSONAL AI</strong>! I am running locally on your hardware with <strong>zero external API connections</strong>. How can I help you today?</div>
+    <div class="msg-header">
+      <span>System</span>
+      <span class="brain-badge">Autonomous Brain Active</span>
+    </div>
+    <div class="msg-content">Welcome to <strong>MY PERSONAL AI (Phase 3: Autonomous Brain)</strong>!
+    <br><br>
+    I am equipped with a <strong>Reasoning Engine, Task Planner, Self-Verifier, Error Recovery</strong>, and <strong>5 Sandboxed Tools</strong> (Calculator, File Reader, Code Analyzer, System Info, DateTime). All executing 100% locally on your RTX 3050 GPU with zero external network access.
+    <br><br>
+    Try asking me:
+    <ul style="margin-left: 20px; margin-top: 6px;">
+      <li><code>"Calculate sqrt(144) * 25 - log10(1000)"</code></li>
+      <li><code>"Show me system hardware and GPU specs"</code></li>
+      <li><code>"Analyze server.py structure and tell me how many functions exist"</code></li>
+      <li><code>"What is today's date and what day will it be in 45 days?"</code></li>
+    </ul>
+    </div>
   </div>
 </main>
 
 <footer>
   <div class="input-container">
     <div class="input-row">
-      <textarea id="promptInput" placeholder="Ask a question or enter a command... (Shift + Enter for new line)"></textarea>
-      <button id="sendBtn">Send</button>
+      <textarea id="promptInput" placeholder="Give me a task, goal, or question... (Shift + Enter for new line)"></textarea>
+      <button id="sendBtn">Execute</button>
     </div>
     <div class="footer-hints">
       <span>Hardware: NVIDIA RTX 3050 4GB VRAM | 16GB RAM</span>
-      <span>Engine: Local Ollama (Qwen 2.5 Coder 3B)</span>
+      <span>Pipeline: Reasoning → Task Planning → Sandboxed Tools → Self-Verification</span>
     </div>
   </div>
 </footer>
@@ -210,9 +331,43 @@
   const promptInput = document.getElementById('promptInput');
   const sendBtn = document.getElementById('sendBtn');
   const modelSelect = document.getElementById('modelSelect');
+  const modeBrain = document.getElementById('modeBrain');
+  const modeChat = document.getElementById('modeChat');
+  const toolsBadge = document.getElementById('toolsBadge');
 
+  let currentMode = 'brain'; // 'brain' or 'chat'
   let conversationHistory = [];
   let isGenerating = false;
+
+  // Toggle modes
+  modeBrain.addEventListener('click', () => {
+    currentMode = 'brain';
+    modeBrain.classList.add('active', 'brain');
+    modeChat.classList.remove('active');
+    sendBtn.textContent = 'Execute';
+    promptInput.placeholder = 'Give me a task, goal, or question... (Shift + Enter for new line)';
+  });
+
+  modeChat.addEventListener('click', () => {
+    currentMode = 'chat';
+    modeChat.classList.add('active');
+    modeBrain.classList.remove('active', 'brain');
+    sendBtn.textContent = 'Send';
+    promptInput.placeholder = 'Ask a question in direct chat mode... (Shift + Enter for new line)';
+  });
+
+  // Load tools
+  async function loadTools() {
+    try {
+      const res = await fetch('/api/v1/tools');
+      const data = await res.json();
+      if (data.count) {
+        toolsBadge.textContent = `🔧 ${data.count} Tools Active`;
+        toolsBadge.title = data.tools.map(t => `${t.name}: ${t.description}`).join('\n\n');
+      }
+    } catch (e) {}
+  }
+  loadTools();
 
   // Load available local models
   async function loadModels() {
@@ -234,7 +389,6 @@
       modelSelect.innerHTML = '<option value="qwen2.5-coder:3b">qwen2.5-coder:3b (default)</option>';
     }
   }
-
   loadModels();
 
   promptInput.addEventListener('keydown', (e) => {
@@ -250,7 +404,6 @@
     const text = promptInput.value.trim();
     if (!text || isGenerating) return;
 
-    // Add user message
     appendMessage('user', text);
     promptInput.value = '';
     isGenerating = true;
@@ -258,11 +411,109 @@
 
     conversationHistory.push({ role: 'user', content: text });
 
-    // Prepare assistant message bubble for streaming
+    if (currentMode === 'brain') {
+      await executeAutonomous(text);
+    } else {
+      await executeDirectChat(text);
+    }
+
+    isGenerating = false;
+    sendBtn.disabled = false;
+    promptInput.focus();
+  }
+
+  // Autonomous Brain Pipeline Execution with Live Progress Streaming
+  async function executeAutonomous(text) {
     const aiMsgObj = appendMessage('assistant', '');
+    const headerEl = aiMsgObj.querySelector('.msg-header');
+    headerEl.innerHTML = `<span>MY PERSONAL AI</span><span class="brain-badge">🧠 Autonomous Brain</span>`;
+    
     const contentEl = aiMsgObj.querySelector('.msg-content');
     const metricsEl = aiMsgObj.querySelector('.msg-metrics');
 
+    // Create thought card
+    const thoughtCard = document.createElement('div');
+    thoughtCard.className = 'thought-card';
+    thoughtCard.innerHTML = `
+      <div class="thought-header"><span>🧠 Autonomous Reasoning & Planning</span></div>
+      <div class="thought-progress-bar"><div class="thought-progress-fill" id="pFill"></div></div>
+      <div class="thought-steps" id="thoughtSteps"><div>Analyzing problem intent...</div></div>
+    `;
+    contentEl.appendChild(thoughtCard);
+
+    const pFill = thoughtCard.querySelector('#pFill');
+    const thoughtSteps = thoughtCard.querySelector('#thoughtSteps');
+    const answerContainer = document.createElement('div');
+    contentEl.appendChild(answerContainer);
+
+    const startTime = performance.now();
+
+    try {
+      const res = await fetch('/api/v1/think', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: text,
+          history: conversationHistory,
+          stream: true,
+          enable_planning: true
+        })
+      });
+
+      if (!res.ok) throw new Error(`Server returned ${res.status}: ${await res.text()}`);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let finalMessage = '';
+      let meta = {};
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunkText = decoder.decode(value);
+        const lines = chunkText.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6).trim();
+            if (dataStr === '[DONE]') break;
+            try {
+              const ev = JSON.parse(dataStr);
+              if (ev.progress_pct !== undefined) {
+                pFill.style.width = `${ev.progress_pct}%`;
+              }
+              if (ev.phase === 'complete') {
+                finalMessage = ev.message;
+                meta = ev.tool_result || {};
+              } else if (ev.phase === 'error') {
+                finalMessage = `⚠️ ${ev.message}`;
+              } else {
+                const stepLine = document.createElement('div');
+                stepLine.textContent = `• [${ev.phase.toUpperCase()}] ${ev.message}`;
+                thoughtSteps.appendChild(stepLine);
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+              }
+            } catch (e) {}
+          }
+        }
+      }
+
+      answerContainer.innerHTML = formatMarkdown(finalMessage);
+      const totalTime = ((performance.now() - startTime) / 1000).toFixed(2);
+      metricsEl.textContent = `⚡ Turnaround: ${totalTime}s | Inferences: ${meta.inference_calls || 1} | Tools: ${meta.tool_count || 0} | Confidence: ${meta.confidence || 0.8}`;
+      conversationHistory.push({ role: 'assistant', content: finalMessage });
+
+    } catch (err) {
+      answerContainer.innerHTML = `<span style="color: #ef4444;">Error: ${err.message}</span>`;
+    }
+  }
+
+  // Direct Chat Execution (Phase 2 style)
+  async function executeDirectChat(text) {
+    const aiMsgObj = appendMessage('assistant', '');
+    const contentEl = aiMsgObj.querySelector('.msg-content');
+    const metricsEl = aiMsgObj.querySelector('.msg-metrics');
     const selectedModel = modelSelect.value || 'qwen2.5-coder:3b';
     const startTime = performance.now();
     let tokenCount = 0;
@@ -279,9 +530,7 @@
         })
       });
 
-      if (!res.ok) {
-        throw new Error(`Server returned ${res.status}: ${await res.text()}`);
-      }
+      if (!res.ok) throw new Error(`Server returned ${res.status}: ${await res.text()}`);
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -315,14 +564,9 @@
       const totalTime = ((performance.now() - startTime) / 1000).toFixed(2);
       const speed = (tokenCount / totalTime).toFixed(1);
       metricsEl.textContent = `⚡ Latency: ${totalTime}s | Speed: ~${speed} tok/s | Model: ${selectedModel}`;
-
       conversationHistory.push({ role: 'assistant', content: fullContent });
     } catch (err) {
       contentEl.innerHTML = `<span style="color: #ef4444;">Error: ${err.message}</span>`;
-    } finally {
-      isGenerating = false;
-      sendBtn.disabled = false;
-      promptInput.focus();
     }
   }
 
@@ -341,15 +585,11 @@
 
   function formatMarkdown(text) {
     if (!text) return '';
-    // Escape HTML
     let escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    // Code blocks
     escaped = escaped.replace(/```([a-zA-Z0-9]*)\n([\s\S]*?)```/g, (match, lang, code) => {
       return `<pre><code>${code}</code></pre>`;
     });
-    // Inline code
     escaped = escaped.replace(/`([^`]+)`/g, '<code>$1</code>');
-    // Line breaks
     escaped = escaped.replace(/\n/g, '<br>');
     return escaped;
   }

@@ -9,8 +9,16 @@ from fastapi.staticfiles import StaticFiles
 from core.config import settings
 from core.logging import setup_logging, logger
 from models.router import model_router, ChatRequest, ChatResponse
+from tools import tool_registry
+from core.orchestrator import Orchestrator, OrchestratorConfig
 
 setup_logging(debug=settings.DEBUG)
+
+orchestrator = Orchestrator(
+    model_router=model_router,
+    tool_registry=tool_registry,
+    config=OrchestratorConfig(),
+)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -52,6 +60,10 @@ async def health_check():
         "host": settings.HOST,
         "port": settings.PORT,
         "router": health_data,
+        "brain": {
+            "orchestrator_online": True,
+            "registered_tools": len(tool_registry.list_tools()),
+        },
         "hardware": {
             "os": platform.system(),
             "python": platform.python_version(),
@@ -147,6 +159,68 @@ async def chat_endpoint(request: ChatRequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Local inference failure: {str(e)}",
+        )
+
+
+@app.get("/api/v1/tools")
+async def list_registered_tools():
+    """Enumerate all available sandboxed tools in the Tool Registry."""
+    tools = tool_registry.list_tools()
+    return {
+        "count": len(tools),
+        "tools": [t.model_dump() for t in tools],
+    }
+
+
+from typing import Optional, List, Dict, Any
+from pydantic import BaseModel, Field
+
+class ThinkRequest(BaseModel):
+    message: str = Field(..., description="Goal or instruction for the autonomous agent")
+    history: Optional[List[Dict[str, str]]] = Field(default=None, description="Recent conversation turns")
+    stream: bool = Field(default=False, description="Whether to stream real-time progress events")
+    enable_planning: bool = Field(default=True, description="Allow multi-step task decomposition")
+
+
+@app.post("/api/v1/think")
+async def think_endpoint(request: ThinkRequest):
+    """Autonomous Intelligence endpoint: reasoning, planning, tool execution, and verification."""
+    if not request.message or not request.message.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The 'message' parameter cannot be empty.",
+        )
+
+    # 1. Handle Streaming Progress Events
+    if request.stream:
+        async def progress_generator():
+            try:
+                async for update in orchestrator.process_stream(
+                    user_message=request.message,
+                    conversation_history=request.history,
+                ):
+                    data_str = json.dumps(update.model_dump())
+                    yield f"data: {data_str}\n\n"
+                yield "data: [DONE]\n\n"
+            except Exception as e:
+                logger.error("think_stream_error", error=str(e))
+                err_data = json.dumps({"phase": "error", "message": f"Autonomous pipeline error: {str(e)}"})
+                yield f"data: {err_data}\n\n"
+
+        return StreamingResponse(progress_generator(), media_type="text/event-stream")
+
+    # 2. Handle Non-Streaming Synchronous Response
+    try:
+        result = await orchestrator.process(
+            user_message=request.message,
+            conversation_history=request.history,
+        )
+        return result.model_dump()
+    except Exception as e:
+        logger.error("think_endpoint_error", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Autonomous processing failure: {str(e)}",
         )
 
 
