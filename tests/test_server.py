@@ -13,9 +13,7 @@ client = TestClient(app)
 def test_root():
     response = client.get("/")
     assert response.status_code == 200
-    data = response.json()
-    assert data["project"] == "MY PERSONAL AI"
-    assert data["status"] == "online"
+    assert "MY PERSONAL AI" in response.text
 
 
 def test_health():

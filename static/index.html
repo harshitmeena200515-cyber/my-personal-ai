@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MY PERSONAL AI — Local Workspace</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card-bg: #1a1d27;
+      --border: #2a2e3d;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --user-msg: #1e3a8a;
+      --ai-msg: #1e2230;
+      --accent: #10b981;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
+
+    header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo-group { display: flex; align-items: center; gap: 12px; }
+    .logo-badge { background: var(--primary); color: white; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 13px; }
+    .title { font-size: 17px; font-weight: 600; }
+    
+    .status-group { display: flex; align-items: center; gap: 16px; font-size: 13px; }
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--accent);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+    .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+
+    select.model-select {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .message {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-width: 85%;
+      padding: 14px 18px;
+      border-radius: 12px;
+      line-height: 1.55;
+      font-size: 15px;
+      word-break: break-word;
+    }
+    .user-message {
+      align-self: flex-end;
+      background: var(--user-msg);
+      border: 1px solid #3b82f6;
+      border-bottom-right-radius: 2px;
+    }
+    .assistant-message {
+      align-self: flex-start;
+      background: var(--ai-msg);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 2px;
+    }
+    .msg-header { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 600; }
+    .msg-content pre {
+      background: #090a0f;
+      padding: 12px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 8px 0;
+      border: 1px solid var(--border);
+      font-family: Consolas, monospace;
+      font-size: 13.5px;
+    }
+    .msg-content code {
+      font-family: Consolas, monospace;
+      background: #11141e;
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+
+    .msg-metrics {
+      margin-top: 8px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      gap: 12px;
+    }
+
+    footer {
+      background: var(--card-bg);
+      border-top: 1px solid var(--border);
+      padding: 16px 24px;
+    }
+    .input-container {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .input-row { display: flex; gap: 12px; }
+    textarea {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14.5px;
+      resize: none;
+      height: 56px;
+      outline: none;
+    }
+    textarea:focus { border-color: var(--primary); }
+
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover { background: var(--primary-hover); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .footer-hints {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      padding: 0 4px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-group">
+    <div class="logo-badge">LOCAL AI</div>
+    <div class="title">MY PERSONAL AI</div>
+  </div>
+  <div class="status-group">
+    <div class="status-pill"><div class="dot"></div> 100% Offline (Localhost)</div>
+    <div style="color: var(--text-muted);">RTX 3050 (4GB)</div>
+    <select id="modelSelect" class="model-select">
+      <option value="">Loading local models...</option>
+    </select>
+  </div>
+</header>
+
+<main id="chatWindow">
+  <div class="message assistant-message">
+    <div class="msg-header">System</div>
+    <div class="msg-content">Welcome to <strong>MY PERSONAL AI</strong>! I am running locally on your hardware with <strong>zero external API connections</strong>. How can I help you today?</div>
+  </div>
+</main>
+
+<footer>
+  <div class="input-container">
+    <div class="input-row">
+      <textarea id="promptInput" placeholder="Ask a question or enter a command... (Shift + Enter for new line)"></textarea>
+      <button id="sendBtn">Send</button>
+    </div>
+    <div class="footer-hints">
+      <span>Hardware: NVIDIA RTX 3050 4GB VRAM | 16GB RAM</span>
+      <span>Engine: Local Ollama (Qwen 2.5 Coder 3B)</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const chatWindow = document.getElementById('chatWindow');
+  const promptInput = document.getElementById('promptInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const modelSelect = document.getElementById('modelSelect');
+
+  let conversationHistory = [];
+  let isGenerating = false;
+
+  // Load available local models
+  async function loadModels() {
+    try {
+      const res = await fetch('/api/v1/models');
+      const data = await res.json();
+      modelSelect.innerHTML = '';
+      if (data.models && data.models.length > 0) {
+        data.models.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.name;
+          opt.textContent = `${m.name} (${m.parameter_size || 'Local'}, ${m.quantization || 'Q4'})`;
+          modelSelect.appendChild(opt);
+        });
+      } else {
+        modelSelect.innerHTML = '<option value="qwen2.5-coder:3b">qwen2.5-coder:3b</option>';
+      }
+    } catch (err) {
+      modelSelect.innerHTML = '<option value="qwen2.5-coder:3b">qwen2.5-coder:3b (default)</option>';
+    }
+  }
+
+  loadModels();
+
+  promptInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  sendBtn.addEventListener('click', sendMessage);
+
+  async function sendMessage() {
+    const text = promptInput.value.trim();
+    if (!text || isGenerating) return;
+
+    // Add user message
+    appendMessage('user', text);
+    promptInput.value = '';
+    isGenerating = true;
+    sendBtn.disabled = true;
+
+    conversationHistory.push({ role: 'user', content: text });
+
+    // Prepare assistant message bubble for streaming
+    const aiMsgObj = appendMessage('assistant', '');
+    const contentEl = aiMsgObj.querySelector('.msg-content');
+    const metricsEl = aiMsgObj.querySelector('.msg-metrics');
+
+    const selectedModel = modelSelect.value || 'qwen2.5-coder:3b';
+    const startTime = performance.now();
+    let tokenCount = 0;
+
+    try {
+      const res = await fetch('/api/v1/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: conversationHistory,
+          model: selectedModel,
+          stream: true,
+          temperature: 0.7
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server returned ${res.status}: ${await res.text()}`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunkText = decoder.decode(value);
+        const lines = chunkText.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6).trim();
+            if (dataStr === '[DONE]') break;
+            try {
+              const parsed = JSON.parse(dataStr);
+              if (parsed.content) {
+                fullContent += parsed.content;
+                tokenCount++;
+                contentEl.innerHTML = formatMarkdown(fullContent);
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+              }
+              if (parsed.eval_count) tokenCount = parsed.eval_count;
+            } catch (e) {}
+          }
+        }
+      }
+
+      const totalTime = ((performance.now() - startTime) / 1000).toFixed(2);
+      const speed = (tokenCount / totalTime).toFixed(1);
+      metricsEl.textContent = `⚡ Latency: ${totalTime}s | Speed: ~${speed} tok/s | Model: ${selectedModel}`;
+
+      conversationHistory.push({ role: 'assistant', content: fullContent });
+    } catch (err) {
+      contentEl.innerHTML = `<span style="color: #ef4444;">Error: ${err.message}</span>`;
+    } finally {
+      isGenerating = false;
+      sendBtn.disabled = false;
+      promptInput.focus();
+    }
+  }
+
+  function appendMessage(role, content) {
+    const div = document.createElement('div');
+    div.className = `message ${role}-message`;
+    div.innerHTML = `
+      <div class="msg-header">${role === 'user' ? 'You' : 'MY PERSONAL AI'}</div>
+      <div class="msg-content">${formatMarkdown(content)}</div>
+      ${role === 'assistant' ? '<div class="msg-metrics"></div>' : ''}
+    `;
+    chatWindow.appendChild(div);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+    return div;
+  }
+
+  function formatMarkdown(text) {
+    if (!text) return '';
+    // Escape HTML
+    let escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // Code blocks
+    escaped = escaped.replace(/```([a-zA-Z0-9]*)\n([\s\S]*?)```/g, (match, lang, code) => {
+      return `<pre><code>${code}</code></pre>`;
+    });
+    // Inline code
+    escaped = escaped.replace(/`([^`]+)`/g, '<code>$1</code>');
+    // Line breaks
+    escaped = escaped.replace(/\n/g, '<br>');
+    return escaped;
+  }
+</script>
+
+</body>
+</html>
