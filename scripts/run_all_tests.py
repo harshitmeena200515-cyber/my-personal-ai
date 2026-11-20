@@ -33,6 +33,7 @@ TEST_SUITES = [
     ("Two-Part Memory Engine (Phase 5)", "tests/test_memory_engine.py"),
     ("Cross-Agent Verification Protocol (CAVP V3 / Phase 6)", "tests/test_cavp_v3.py"),
     ("Windows Hardening (DPAPI & Job Objects / Phase 7)", "tests/test_windows_hardening.py"),
+    ("External Cloud Advisor (Phase 8)", "tests/test_external_advisor.py"),
 ]
 
 
