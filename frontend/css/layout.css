@@ -1,15 +1,18 @@
-/* MY PERSONAL AI — Layout & Grid Architecture */
+/* MY PERSONAL AI — Neo-Intelligence Layout & Structural Architecture */
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
 body {
   background-color: var(--bg-app);
+  background-image: 
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.12), transparent 70%),
+    radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.08), transparent 50%);
   color: var(--text-main);
   height: 100vh;
   width: 100vw;
@@ -18,62 +21,209 @@ body {
   flex-direction: column;
 }
 
-/* App Header */
+/* ==========================================================================
+   1. Top Command HUD Header
+   ========================================================================== */
 .app-header {
   height: var(--header-height);
-  background: var(--bg-sidebar);
+  background: var(--bg-glass);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
-  z-index: 30;
+  padding: 0 24px;
+  z-index: 50;
   flex-shrink: 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
 }
 
 .brand-section {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
 }
 
-.brand-badge {
-  background: linear-gradient(135deg, var(--accent-purple), var(--accent-primary));
+.brand-logo-glow {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--accent-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
   color: #fff;
-  font-weight: 700;
-  font-size: 13px;
-  padding: 5px 10px;
-  border-radius: var(--radius-sm);
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px var(--accent-purple-glow);
+  box-shadow: 0 0 16px var(--accent-primary-glow);
+  position: relative;
+}
+
+.brand-logo-glow::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: var(--accent-gradient);
+  opacity: 0.4;
+  filter: blur(4px);
+  z-index: -1;
 }
 
 .brand-title {
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -0.2px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
   color: var(--text-main);
+  text-transform: uppercase;
 }
 
 .brand-subtitle {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text-muted);
-  font-weight: 400;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.header-status-group {
+.brand-version-pill {
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-cyan);
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+}
+
+/* Center HUD Controls (Model Selector & Telemetry) */
+.header-center-hud {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.model-selector-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.model-select {
+  appearance: none;
+  background: rgba(15, 23, 42, 0.9);
+  color: var(--text-main);
+  border: 1px solid var(--border-neon);
+  border-radius: var(--radius-full);
+  padding: 7px 34px 7px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: all var(--transition-fast);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.model-select:hover, .model-select:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 14px var(--accent-primary-glow);
+}
+
+.model-select-icon {
+  position: absolute;
+  right: 12px;
+  pointer-events: none;
+  font-size: 10px;
+  color: var(--accent-cyan);
+}
+
+.hud-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.hud-pill.active {
+  border-color: rgba(16, 185, 129, 0.35);
+  color: var(--text-main);
+}
+
+.hud-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--status-success);
+  box-shadow: 0 0 8px var(--status-success);
+  animation: pulse-online 2s infinite ease-in-out;
+}
+
+@keyframes pulse-online {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+/* Header Controls Right */
+.header-controls {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.header-controls {
+.voice-tts-toggle {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  padding: 5px 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
 }
 
-/* Main Container (3 Columns) */
+.voice-tts-toggle.enabled {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: var(--accent-primary);
+  color: var(--text-accent);
+  box-shadow: 0 0 12px var(--accent-primary-glow);
+}
+
+.user-badge-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid var(--border-neon);
+  border-radius: var(--radius-full);
+  padding: 5px 12px;
+  font-size: 12.5px;
+}
+
+.role-badge {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: var(--accent-gradient);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   2. Main 3-Column OS Layout
+   ========================================================================== */
 .app-body {
   flex: 1;
   display: flex;
@@ -81,7 +231,7 @@ body {
   position: relative;
 }
 
-/* Left Sidebar */
+/* Left Sidebar Rail */
 .app-sidebar {
   width: var(--sidebar-width);
   background: var(--bg-sidebar);
@@ -89,89 +239,176 @@ body {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  transition: transform var(--transition-normal);
+  transition: all var(--transition-smooth);
   z-index: 20;
 }
 
-.sidebar-top {
+.app-sidebar.collapsed {
+  transform: translateX(-100%);
+  width: 0;
+  padding: 0;
+  border: none;
+}
+
+.sidebar-action-header {
   padding: 16px;
   border-bottom: 1px solid var(--border-subtle);
 }
 
-.sidebar-conversations {
+.btn-new-chat-glow {
+  width: 100%;
+  background: var(--accent-gradient);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: 0 4px 16px var(--accent-primary-glow);
+}
+
+.btn-new-chat-glow:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px var(--accent-primary-glow);
+}
+
+/* Sidebar Module Navigation List */
+.sidebar-modules-nav {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.module-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+}
+
+.module-nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+}
+
+.module-nav-item.active {
+  background: var(--accent-gradient-subtle);
+  color: var(--text-accent);
+  border-left: 3px solid var(--accent-primary);
+  font-weight: 600;
+}
+
+.module-nav-badge {
+  margin-left: auto;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Conversations List */
+.sidebar-conversations-section {
   flex: 1;
   overflow-y: auto;
-  padding: 12px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
-.sidebar-bottom {
-  padding: 14px 16px;
-  border-top: 1px solid var(--border-subtle);
-  background: rgba(0, 0, 0, 0.15);
+.section-label-micro {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 4px 8px;
+}
+
+.conversation-item {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: 1px solid transparent;
 }
 
-/* Center Workspace */
+.conversation-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
+  border-color: var(--border-subtle);
+}
+
+.conversation-item.active {
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--text-main);
+  border-color: rgba(59, 130, 246, 0.3);
+  font-weight: 500;
+}
+
+.conversation-actions {
+  display: none;
+  align-items: center;
+  gap: 6px;
+}
+
+.conversation-item:hover .conversation-actions {
+  display: flex;
+}
+
+/* Center Workspace (Chat Stream & Floating Input) */
 .app-workspace {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: var(--bg-app);
+  height: 100%;
   overflow: hidden;
   position: relative;
 }
 
-.workspace-header {
-  height: 48px;
+.workspace-header-bar {
+  height: 52px;
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  background: rgba(20, 27, 45, 0.4);
-  backdrop-filter: blur(8px);
+  background: rgba(11, 15, 23, 0.5);
+  backdrop-filter: blur(12px);
+  z-index: 10;
 }
 
-.active-conversation-meta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.conversation-heading {
+.active-session-title {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-main);
-  max-width: 380px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.chat-stream-container {
-  flex: 1;
-  overflow-y: auto;
-  padding: 24px;
   display: flex;
-  flex-direction: column;
-  gap: 20px;
-  scroll-behavior: smooth;
+  align-items: center;
+  gap: 8px;
 }
 
-.chat-input-container {
-  padding: 16px 24px 20px 24px;
-  background: linear-gradient(180deg, transparent 0%, var(--bg-app) 30%);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* Right Inspector / Multi-Agent & Security Drawer */
+/* Right Inspector Drawer (Telemetry & Agents) */
 .app-inspector {
   width: var(--inspector-width);
   background: var(--bg-sidebar);
@@ -179,88 +416,74 @@ body {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  transition: transform var(--transition-normal);
+  transition: all var(--transition-smooth);
   z-index: 20;
 }
 
-.inspector-nav {
+.app-inspector.collapsed {
+  transform: translateX(100%);
+  width: 0;
+  padding: 0;
+  border: none;
+}
+
+.inspector-tabs-header {
   display: flex;
   border-bottom: 1px solid var(--border-subtle);
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(15, 23, 42, 0.5);
 }
 
-.inspector-tab {
+.inspector-tab-btn {
   flex: 1;
-  padding: 12px 6px;
-  text-align: center;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-muted);
-  background: transparent;
+  padding: 12px 8px;
+  background: none;
   border: none;
   border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
-  transition: var(--transition-fast);
+  transition: all var(--transition-fast);
+  text-align: center;
 }
 
-.inspector-tab:hover {
+.inspector-tab-btn:hover {
   color: var(--text-secondary);
 }
 
-.inspector-tab.active {
+.inspector-tab-btn.active {
   color: var(--accent-primary);
   border-bottom-color: var(--accent-primary);
   background: rgba(59, 130, 246, 0.05);
 }
 
-.inspector-content {
+.inspector-body {
   flex: 1;
   overflow-y: auto;
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
-/* Responsive Overrides */
-@media (max-width: 1024px) {
-  .app-inspector {
-    position: absolute;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    transform: translateX(100%);
-    box-shadow: -4px 0 16px rgba(0, 0, 0, 0.5);
-  }
-
-  .app-inspector.open {
-    transform: translateX(0);
-  }
+.telemetry-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-@media (max-width: 768px) {
-  .app-sidebar {
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    transform: translateX(-100%);
-    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.5);
-  }
-
-  .app-sidebar.open {
-    transform: translateX(0);
-  }
-
-  .workspace-header {
-    padding: 0 16px;
-  }
-
-  .chat-stream-container {
-    padding: 16px;
-  }
-
-  .chat-input-container {
-    padding: 12px 16px 16px 16px;
-  }
+.telemetry-card-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }

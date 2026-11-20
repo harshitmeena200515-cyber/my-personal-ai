@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MY PERSONAL AI — Autonomous Workspace</title>
+  <title>MY PERSONAL AI — Neo-Intelligence Command Center</title>
   
-  <!-- Modular Stylesheets -->
+  <!-- Neo-Intelligence Modular Stylesheets -->
   <link rel="stylesheet" href="/frontend/css/variables.css">
   <link rel="stylesheet" href="/frontend/css/layout.css">
   <link rel="stylesheet" href="/frontend/css/chat.css">
@@ -13,260 +13,307 @@
 </head>
 <body>
 
-  <!-- Top Application Header -->
+  <!-- ========================================================================
+       1. Top Command HUD Header
+       ======================================================================== -->
   <header class="app-header">
     <div class="brand-section">
       <button id="sidebar-toggle-btn" class="btn btn-ghost btn-icon" title="Toggle Sidebar">☰</button>
-      <div class="brand-badge">PRO v0.4</div>
+      <div class="brand-logo-glow">⚡</div>
       <div>
         <div class="brand-title">MY PERSONAL AI</div>
-        <div class="brand-subtitle">100% Offline | Autonomous Agent OS</div>
+        <div class="brand-subtitle">
+          <span>Autonomous AI OS</span>
+          <span class="brand-version-pill">NEO v0.4</span>
+        </div>
       </div>
     </div>
 
-    <!-- Live System Telemetry Status -->
-    <div class="header-status-group">
-      <div class="status-pill online" title="Local Ollama engine running on CUDA0">
-        <span class="status-dot"></span>
-        <span>Local Engine (qwen2.5-coder:3b)</span>
+    <!-- Center HUD (Model Selector & Telemetry) -->
+    <div class="header-center-hud">
+      <div class="model-selector-wrapper">
+        <select id="header-model-select" class="model-select" title="Active Model Engine">
+          <option value="gemini-flash-lite-latest" selected>⚡ Gemini Flash (Fast & Math)</option>
+          <option value="gemini-pro-latest">🧠 Gemini Pro (Deep Search & Logic)</option>
+          <option value="qwen2.5-coder:3b">🔒 Local Offline (qwen2.5-coder)</option>
+        </select>
+        <span class="model-select-icon">▼</span>
       </div>
-      <div class="status-pill online" title="NVIDIA RTX 3050 Laptop GPU">
-        <span>⚡ RTX 3050 (4GB VRAM)</span>
+
+      <div class="hud-pill active" title="Local CUDA Hardware Acceleration">
+        <span class="hud-dot"></span>
+        <span>RTX 3050 (4GB)</span>
+      </div>
+
+      <div class="hud-pill" title="System Memory Allocation">
+        <span>RAM 16GB</span>
       </div>
     </div>
 
-    <!-- Header Controls & User Profile -->
+    <!-- Header Controls Right -->
     <div class="header-controls">
-      <button id="theme-toggle-btn" class="btn btn-ghost btn-icon" title="Toggle Dark/Light Mode">☀️</button>
-      <button id="inspector-toggle-btn" class="btn btn-ghost btn-icon" title="Toggle Agent Inspector">⚙️</button>
-      
-      <div id="user-profile-pill" class="status-pill" style="display: none; background: var(--bg-card); border: 1px solid var(--border-subtle);">
-        <span id="user-role-badge" class="status-pill online">USER</span>
-        <strong id="username-display" style="color: var(--text-main); font-size: 13px;">user</strong>
-        <button id="logout-btn" class="btn btn-ghost btn-icon" style="width: 24px; height: 24px; font-size: 11px;" title="Sign Out">🚪</button>
+      <!-- Auto Voice Text-to-Speech Toggle -->
+      <button id="voice-tts-toggle" class="voice-tts-toggle" title="Toggle Automatic Voice Speech (TTS)">
+        <span id="tts-icon">🔊</span>
+        <span id="tts-label">Voice Reply: Off</span>
+      </button>
+
+      <button id="theme-toggle-btn" class="btn btn-ghost btn-icon" title="Toggle Light/Dark Theme">☀️</button>
+      <button id="inspector-toggle-btn" class="btn btn-ghost btn-icon" title="Toggle Telemetry Drawer">⚙️</button>
+
+      <!-- User Profile Badge -->
+      <div id="user-profile-pill" class="user-badge-pill" style="display: none;">
+        <span id="user-role-badge" class="role-badge">OWNER</span>
+        <strong id="username-display" style="color: var(--text-main); font-size: 13px;">harshit</strong>
+        <button id="logout-btn" class="btn btn-ghost btn-icon" style="width: 22px; height: 22px; font-size: 11px;" title="Sign Out">🚪</button>
       </div>
     </div>
   </header>
 
-  <!-- 3-Column AI OS Main Body -->
+  <!-- ========================================================================
+       2. Main 3-Column AI OS Body
+       ======================================================================== -->
   <div class="app-body">
 
-    <!-- Left Sidebar: Conversations & Navigation -->
+    <!-- Left Command Sidebar -->
     <aside class="app-sidebar" id="app-sidebar">
-      <div class="sidebar-top">
-        <button id="new-chat-btn" class="btn btn-primary" style="width: 100%;">
-          <span>+</span> New Session
+      <div class="sidebar-action-header">
+        <button id="new-chat-btn" class="btn-new-chat-glow">
+          <span>+</span> New Intelligence Session
         </button>
       </div>
 
-      <div class="sidebar-conversations" id="conversations-list">
+      <!-- 10 Core AI Platform Modules Navigation -->
+      <nav class="sidebar-modules-nav">
+        <a href="#" class="module-nav-item active" data-view="chat">
+          <span>💬</span>
+          <span>Intelligent Chat & Math</span>
+          <span class="module-nav-badge" style="color: var(--accent-cyan);">Active</span>
+        </a>
+        <a href="#" class="module-nav-item" data-view="agents">
+          <span>🤖</span>
+          <span>Multi-Agent Swarm</span>
+          <span class="module-nav-badge">3</span>
+        </a>
+        <a href="#" class="module-nav-item" data-view="cavp">
+          <span>🛡️</span>
+          <span>CAVP V3 Verification</span>
+        </a>
+        <a href="#" class="module-nav-item" data-view="memory">
+          <span>🧠</span>
+          <span>Two-Part Memory</span>
+        </a>
+        <a href="#" class="module-nav-item" data-view="automation">
+          <span>⚙️</span>
+          <span>Workflows & Cron</span>
+        </a>
+        <a href="#" class="module-nav-item" data-view="knowledge">
+          <span>📚</span>
+          <span>Knowledge Vector</span>
+        </a>
+        <a href="#" class="module-nav-item" data-view="security">
+          <span>🔒</span>
+          <span>Security & DPAPI</span>
+        </a>
+        <a href="#" class="module-nav-item" data-view="models">
+          <span>🔮</span>
+          <span>Google AI & Models</span>
+        </a>
+      </nav>
+
+      <!-- Recent Conversations History -->
+      <div class="section-label-micro" style="margin-top: 10px; padding-left: 18px;">Recent Sessions</div>
+      <div class="sidebar-conversations-section" id="conversations-list">
         <!-- Rendered dynamically by app.js -->
       </div>
 
-      <div class="sidebar-bottom">
-        <div style="font-size: 11.5px; color: var(--text-muted); display: flex; justify-content: space-between;">
-          <span>Database Storage</span>
-          <span style="color: var(--status-success);">WAL Mode (SQLite)</span>
-        </div>
-        <div style="font-size: 11px; color: var(--text-muted);">
-          Strict Multi-User Isolation & Sandbox Active
-        </div>
+      <div style="padding: 12px 16px; border-top: 1px solid var(--border-subtle); font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between;">
+        <span>SQLite WAL Mode</span>
+        <span style="color: var(--status-success);">● Online</span>
       </div>
     </aside>
 
-    <!-- Center Workspace: Chat & Autonomous Task Execution -->
+    <!-- Center Neural Canvas (Chat Stream & Floating Input) -->
     <main class="app-workspace">
       
       <!-- Workspace Sub-Header -->
-      <div class="workspace-header">
-        <div class="active-conversation-meta">
-          <span style="font-size: 16px;">💬</span>
-          <h1 class="conversation-heading" id="workspace-header-title">New Conversation</h1>
+      <div class="workspace-header-bar">
+        <div class="active-session-title">
+          <span>💬</span>
+          <h1 id="workspace-header-title" style="font-size: 14px; font-weight: 600;">Active Neural Session</h1>
         </div>
-        <div style="display: flex; gap: 8px;">
-          <div class="status-pill" style="background: rgba(59, 130, 246, 0.1); color: var(--accent-primary); border: 1px solid rgba(59, 130, 246, 0.2);">
-            <span>Model: qwen2.5-coder:3b</span>
-          </div>
+
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span id="active-model-indicator" class="hud-pill" style="font-size: 11.5px; border-color: var(--border-neon); color: var(--text-accent);">
+            Model: Gemini Flash
+          </span>
+          <button id="clear-chat-btn" class="btn btn-ghost btn-icon" title="Clear Chat History">🗑️</button>
         </div>
       </div>
 
-      <!-- Chat Stream Area -->
+      <!-- Chat Stream Container -->
       <div class="chat-stream-container" id="chat-stream">
-        <!-- Welcome Hero or Messages Rendered Here -->
+        <!-- Empty State Hero will be rendered here by default -->
       </div>
 
-      <!-- Chat Input Area -->
-      <div class="chat-input-container">
-        <div class="input-bar-wrapper">
-          
-          <div class="input-row-top">
-            <textarea
-              id="chat-textarea"
-              class="chat-textarea"
-              placeholder="Ask anything in standard chat (Shift+Enter for newline)..."
+      <!-- Floating Glass Input Dock -->
+      <div class="chat-input-wrapper">
+        <div class="neural-input-dock">
+          <div class="neural-input-row">
+            <textarea 
+              id="chat-textarea" 
+              class="neural-textarea" 
+              placeholder="Ask anything, paste complex math problems, or click the mic to speak..." 
               rows="1"
             ></textarea>
-            
-            <!-- Voice Interaction Placeholder -->
-            <button id="voice-btn" class="btn btn-ghost btn-icon voice-btn-placeholder" title="Voice Input (Phase 5 Placeholder)">
-              🎙️
-            </button>
 
-            <!-- Send / Generate Button -->
-            <button id="send-btn" class="btn btn-primary btn-icon" title="Send Message">
-              ▲
-            </button>
-          </div>
+            <div class="dock-controls-right">
+              <!-- Voice Microphone Button -->
+              <button id="voice-btn" class="btn-mic-voice" title="Click to speak (Hindi/English Voice Recognition)">
+                <span id="voice-mic-icon">🎙️</span>
+              </button>
 
-          <!-- Bottom Control Bar (Mode Selector) -->
-          <div class="input-row-bottom">
-            <div class="mode-toggle-group">
-              <span style="color: var(--text-muted); font-size: 11.5px; margin-right: 4px;">Engine Mode:</span>
-              <button id="mode-chat-btn" class="mode-btn active">⚡ Standard Chat</button>
-              <button id="mode-think-btn" class="mode-btn">🧠 Deep Think (Autonomous)</button>
-            </div>
-            <div style="font-size: 11px; color: var(--text-muted);">
-              Zero Cloud Leakage • 100% Offline
+              <!-- Send Button -->
+              <button id="send-btn" class="btn-send-dock" title="Send message (Enter)">
+                <span>⚡</span>
+              </button>
             </div>
           </div>
 
+          <div class="dock-footer-meta">
+            <div style="display: flex; gap: 10px;">
+              <span id="recording-status-text" style="color: var(--status-danger); display: none; font-weight: 600;">🔴 Listening to voice...</span>
+              <span>⚡ Google AI Studio + Local Orchestrator</span>
+            </div>
+            <span>Press Enter to send · Shift+Enter for new line</span>
+          </div>
         </div>
       </div>
+
     </main>
 
-    <!-- Right Inspector: Multi-Agent Planning, Memory, HITL & Hardware -->
+    <!-- Right Inspector & Telemetry Drawer -->
     <aside class="app-inspector" id="app-inspector">
-      
-      <!-- Inspector Navigation Tabs -->
-      <div class="inspector-nav">
-        <button class="inspector-tab active" data-target="planning">Planning</button>
-        <button class="inspector-tab" data-target="memory">Memory</button>
-        <button class="inspector-tab" data-target="security">Security & HITL</button>
-        <button class="inspector-tab" data-target="hardware">Hardware</button>
+      <div class="inspector-tabs-header">
+        <button class="inspector-tab-btn active" data-tab="agents">Swarm</button>
+        <button class="inspector-tab-btn" data-tab="cavp">CAVP V3</button>
+        <button class="inspector-tab-btn" data-tab="memory">Memory</button>
+        <button class="inspector-tab-btn" data-tab="hardware">Hardware</button>
       </div>
 
-      <!-- Tab 1: Task Planning & Execution Progress -->
-      <div class="inspector-content" id="tab-planning-content">
-        <div class="inspector-card">
-          <div class="inspector-card-title">
-            <span>Autonomous Execution Pipeline</span>
-          </div>
-          <div id="planning-steps-container">
-            <div style="font-size: 12.5px; color: var(--text-muted); text-align: center; padding: 20px 0;">
-              No autonomous task currently running.<br>
-              Switch to <strong>Deep Think</strong> mode to initiate multi-step execution.
+      <div class="inspector-body">
+        
+        <!-- Tab 1: Multi-Agent Swarm -->
+        <div class="inspector-tab-panel" id="tab-panel-agents">
+          <div class="telemetry-card">
+            <div class="telemetry-card-title">
+              <span>Autonomous Agents</span>
+              <span class="brand-version-pill">3 ACTIVE</span>
             </div>
-          </div>
-        </div>
-
-        <div class="inspector-card">
-          <div class="inspector-card-title">Available Sandboxed Tools</div>
-          <div id="active-tools-list" class="tool-badge-row">
-            <!-- Loaded dynamically from /api/v1/tools -->
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab 2: Memory & Sandbox -->
-      <div class="inspector-content" id="tab-memory-content" style="display: none;">
-        <div class="inspector-card">
-          <div class="inspector-card-title">Tri-Layer Memory State</div>
-          <div style="font-size: 12px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 8px;">
-            <div><strong>L1 Working Context:</strong> Active in RAM (Session scoped)</div>
-            <div><strong>L2 Episodic Memory:</strong> SQLite Messages & Tasks (Persistent)</div>
-            <div><strong>L3 Semantic Memory:</strong> Local vector indexing ready</div>
-          </div>
-        </div>
-
-        <div class="inspector-card">
-          <div class="inspector-card-title">User Workspace Sandbox</div>
-          <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
-            Confinement: <code>data/users/{user_id}/workspace</code><br>
-            Path Traversal Defense: <strong>Strict Enforcement</strong><br>
-            Cross-User Access: <strong>Isolated</strong>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab 3: Security & Human-in-the-Loop (HITL) -->
-      <div class="inspector-content" id="tab-security-content" style="display: none;">
-        <div class="inspector-card">
-          <div class="inspector-card-title">Access Control & Role (RBAC)</div>
-          <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
-            Role: <span id="rbac-role-info" style="color: var(--accent-primary); font-weight: bold;">Standard User</span><br>
-            Public Registration Escalation: <strong>Blocked</strong><br>
-            Owner Elevation: <strong>CLI Local Console Only</strong><br>
-            Session Authentication: <strong>Argon2id + SHA-256 Bearer Token</strong>
-          </div>
-        </div>
-
-        <div class="inspector-card">
-          <div class="inspector-card-title">Human-in-the-Loop (HITL) Approvals</div>
-          <div id="hitl-container">
-            <div class="approval-card">
-              <div class="approval-badge">🛡️ Sensitive Action Policy</div>
-              <div style="font-size: 12px; color: var(--text-secondary);">
-                Dangerous operations (file modifications, shell actions) require explicit human authorization before execution.
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+              <div style="padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                <div style="font-weight: 600; font-size: 12.5px; color: #60a5fa;">🤖 CodingAgent</div>
+                <div style="font-size: 11px; color: var(--text-muted);">Senior Software Engineer & Code Synthesizer</div>
               </div>
-              <div class="status-pill online" style="width: fit-content;">
-                <span>HITL Engine: Active & Enforced</span>
+              <div style="padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                <div style="font-weight: 600; font-size: 12.5px; color: #a78bfa;">🔍 ResearchAgent</div>
+                <div style="font-size: 11px; color: var(--text-muted);">Deep System Analyst & Knowledge Retriever</div>
+              </div>
+              <div style="padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                <div style="font-weight: 600; font-size: 12.5px; color: #34d399;">🛡️ CyberSecAgent</div>
+                <div style="font-size: 11px; color: var(--text-muted);">Zero-Trust Guardian & VETO Auditor</div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Tab 4: System Hardware Telemetry -->
-      <div class="inspector-content" id="tab-hardware-content" style="display: none;">
-        <div class="inspector-card">
-          <div class="inspector-card-title">System Specifications</div>
-          <div id="hardware-details-container">
-            <!-- Loaded dynamically from /api/v1/system/info -->
+        <!-- Tab 2: CAVP V3 Protocol -->
+        <div class="inspector-tab-panel" id="tab-panel-cavp" style="display: none;">
+          <div class="telemetry-card">
+            <div class="telemetry-card-title">
+              <span>CAVP V3 Star-Topology</span>
+              <span style="color: var(--status-success);">ENFORCED</span>
+            </div>
+            <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+              Ephemeral Envelopes: <strong>Frozen</strong><br>
+              Scoring Threshold: <strong>≥ 0.90 (Auto-Pass)</strong><br>
+              Cybersecurity VETO: <strong>Active</strong><br>
+              DPAPI Session Key: <strong>Secured in RAM</strong>
+            </div>
           </div>
         </div>
-      </div>
 
+        <!-- Tab 3: Two-Part Memory -->
+        <div class="inspector-tab-panel" id="tab-panel-memory" style="display: none;">
+          <div class="telemetry-card">
+            <div class="telemetry-card-title">
+              <span>Two-Part Memory (ADR-009)</span>
+              <span style="color: var(--accent-cyan);">ACTIVE</span>
+            </div>
+            <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+              Private Agent Scratchpad: <strong>Isolated</strong><br>
+              Shared Memory: <strong>Harshit-Approval Only</strong><br>
+              Pending Approvals: <strong>0</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 4: Hardware HUD -->
+        <div class="inspector-tab-panel" id="tab-panel-hardware" style="display: none;">
+          <div class="telemetry-card">
+            <div class="telemetry-card-title">
+              <span>Hardware Specifications</span>
+            </div>
+            <div id="hardware-details-container" style="font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+              GPU: <strong>NVIDIA RTX 3050 (4GB VRAM)</strong><br>
+              System RAM: <strong>16 GB</strong><br>
+              OS: <strong>Windows 11 x64</strong><br>
+              Python: <strong>3.12 (Isolated venv)</strong>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </aside>
 
   </div>
 
-  <!-- Authentication Modal (Sign In / Register) -->
+  <!-- ========================================================================
+       3. Authentication Modal
+       ======================================================================== -->
   <div class="modal-overlay" id="auth-modal">
     <div class="modal-card">
       <div class="modal-header">
-        <div class="welcome-icon" style="margin: 0 auto 12px auto;">⚡</div>
+        <div class="brand-logo-glow" style="margin: 0 auto 12px auto; width: 44px; height: 44px; font-size: 22px;">⚡</div>
         <h2 class="modal-title">MY PERSONAL AI</h2>
-        <p class="modal-desc">Sign in or create an account on your private local AI node.</p>
+        <p class="modal-desc">Sign in with your Owner account to access your Command Center.</p>
       </div>
 
-      <!-- Auth Mode Tabs -->
       <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
         <button id="tab-login" class="mode-btn active" style="flex: 1;">Sign In</button>
         <button id="tab-register" class="mode-btn" style="flex: 1;">Create Account</button>
       </div>
 
-      <!-- Error Banner -->
       <div id="auth-error-banner" class="form-error-banner"></div>
 
-      <!-- Form -->
-      <form id="auth-form" style="display: flex; flex-direction: column; gap: 14px;">
+      <form id="auth-form" style="display: flex; flex-direction: column; gap: 14px; margin-top: 10px;">
         <div class="form-group">
           <label class="form-label" for="auth-username">Username</label>
-          <input id="auth-username" class="form-input" type="text" placeholder="Enter username (3-30 chars)" required autocomplete="username">
+          <input id="auth-username" class="form-input" type="text" placeholder="e.g. harshit" value="harshit" required autocomplete="username">
         </div>
 
         <div class="form-group">
           <label class="form-label" for="auth-password">Password</label>
-          <input id="auth-password" class="form-input" type="password" placeholder="Enter password (min 8 characters)" required autocomplete="current-password">
+          <input id="auth-password" class="form-input" type="password" placeholder="Enter password" value="Harshit@123" required autocomplete="current-password">
         </div>
 
         <button id="auth-submit-btn" type="submit" class="btn btn-primary" style="margin-top: 6px; width: 100%;">
-          Sign In
+          Access Command Center
         </button>
       </form>
 
-      <div style="font-size: 11px; color: var(--text-muted); text-align: center;">
-        🔒 All credentials and data remain 100% on your local machine.
+      <div style="font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 10px;">
+        🔒 All credentials and private memory remain 100% on your local machine.
       </div>
     </div>
   </div>
@@ -274,7 +321,7 @@
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toast-container"></div>
 
-  <!-- Core Scripts -->
+  <!-- Application Controller Scripts -->
   <script src="/frontend/js/api.js"></script>
   <script src="/frontend/js/app.js"></script>
 </body>

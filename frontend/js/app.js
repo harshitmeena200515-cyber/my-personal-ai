@@ -1,5 +1,7 @@
 /**
- * MY PERSONAL AI — Application State & UI Controller
+ * MY PERSONAL AI — Neo-Intelligence Command Center Controller
+ * Complete voice recognition (STT), voice synthesis (TTS), math formatting,
+ * model cascading, and multi-agent telemetry orchestration.
  */
 
 // Application State
@@ -8,19 +10,29 @@ const state = {
   conversations: [],
   activeConversationId: null,
   activeMessages: [],
-  mode: "chat", // "chat" | "think"
+  selectedModel: "gemini-flash-lite-latest",
   isGenerating: false,
-  abortController: null,
-  theme: localStorage.getItem("app_theme") || "dark",
-  hardwareInfo: null,
-  activeTools: [],
+  autoSpeak: false,
+  isListening: false,
+  speechRecognition: null,
+  currentSpeakingUtterance: null,
 };
 
 // DOM Elements
 const elements = {
-  // Theme & Body
+  // Theme & Model
   html: document.documentElement,
   themeToggleBtn: document.getElementById("theme-toggle-btn"),
+  headerModelSelect: document.getElementById("header-model-select"),
+  activeModelIndicator: document.getElementById("active-model-indicator"),
+
+  // Voice TTS & Mic STT
+  voiceTtsToggle: document.getElementById("voice-tts-toggle"),
+  ttsIcon: document.getElementById("tts-icon"),
+  ttsLabel: document.getElementById("tts-label"),
+  voiceBtn: document.getElementById("voice-btn"),
+  voiceMicIcon: document.getElementById("voice-mic-icon"),
+  recordingStatusText: document.getElementById("recording-status-text"),
 
   // Auth Modal
   authModal: document.getElementById("auth-modal"),
@@ -36,45 +48,46 @@ const elements = {
   userRoleBadge: document.getElementById("user-role-badge"),
   logoutBtn: document.getElementById("logout-btn"),
 
-  // Sidebar
+  // Sidebar & Modules
   sidebar: document.getElementById("app-sidebar"),
   sidebarToggleBtn: document.getElementById("sidebar-toggle-btn"),
   newChatBtn: document.getElementById("new-chat-btn"),
   conversationsList: document.getElementById("conversations-list"),
+  moduleNavItems: document.querySelectorAll(".module-nav-item"),
 
-  // Workspace / Chat
+  // Workspace
   workspaceHeaderTitle: document.getElementById("workspace-header-title"),
+  clearChatBtn: document.getElementById("clear-chat-btn"),
   chatStream: document.getElementById("chat-stream"),
   chatTextarea: document.getElementById("chat-textarea"),
   sendBtn: document.getElementById("send-btn"),
-  modeChatBtn: document.getElementById("mode-chat-btn"),
-  modeThinkBtn: document.getElementById("mode-think-btn"),
-  voiceBtn: document.getElementById("voice-btn"),
 
-  // Inspector Drawer
+  // Right Inspector
   inspector: document.getElementById("app-inspector"),
   inspectorToggleBtn: document.getElementById("inspector-toggle-btn"),
-  inspectorTabs: document.querySelectorAll(".inspector-tab"),
-  inspectorTabPlanning: document.getElementById("tab-planning-content"),
-  inspectorTabMemory: document.getElementById("tab-memory-content"),
-  inspectorTabSecurity: document.getElementById("tab-security-content"),
-  inspectorTabHardware: document.getElementById("tab-hardware-content"),
-
-  // Live Inspector Panels
-  planningStepsContainer: document.getElementById("planning-steps-container"),
-  hitlContainer: document.getElementById("hitl-container"),
-  hardwareDetailsContainer: document.getElementById("hardware-details-container"),
-  activeToolsList: document.getElementById("active-tools-list"),
+  inspectorTabBtns: document.querySelectorAll(".inspector-tab-btn"),
+  inspectorPanels: {
+    agents: document.getElementById("tab-panel-agents"),
+    cavp: document.getElementById("tab-panel-cavp"),
+    memory: document.getElementById("tab-panel-memory"),
+    hardware: document.getElementById("tab-panel-hardware"),
+  },
 
   // Toast
   toastContainer: document.getElementById("toast-container"),
 };
 
-// --- Initialization ---
+// ============================================================================
+// 1. Initialization
+// ============================================================================
 
 async function init() {
-  applyTheme(state.theme);
   setupEventListeners();
+  initVoiceSystem();
+
+  // Check saved theme
+  const savedTheme = localStorage.getItem("app_theme") || "dark";
+  applyTheme(savedTheme);
 
   // Check existing session
   try {
@@ -87,49 +100,19 @@ async function init() {
   } catch (err) {
     showAuthModal("login");
   }
-
-  // Load system hardware & tools in background
-  loadSystemData();
 }
 
-// --- Theme Management ---
-
-function applyTheme(theme) {
-  state.theme = theme;
-  elements.html.setAttribute("data-theme", theme);
-  localStorage.setItem("app_theme", theme);
-  if (elements.themeToggleBtn) {
-    elements.themeToggleBtn.textContent = theme === "dark" ? "☀️" : "🌙";
-  }
-}
-
-// --- Toast Notification ---
-
-function showToast(message, duration = 3000) {
-  const toast = document.createElement("div");
-  toast.className = "toast";
-  toast.textContent = message;
-  elements.toastContainer.appendChild(toast);
-  setTimeout(() => {
-    toast.style.opacity = "0";
-    toast.style.transform = "translateY(10px)";
-    toast.style.transition = "all 0.3s ease";
-    setTimeout(() => toast.remove(), 300);
-  }, duration);
-}
-
-// --- Authentication UI Flow ---
+// ============================================================================
+// 2. Authentication Management
+// ============================================================================
 
 function showAuthModal(mode = "login") {
-  elements.authModal.classList.add("active");
+  elements.authModal.classList.add("visible");
   elements.authErrorBanner.style.display = "none";
-  elements.authUsername.value = "";
-  elements.authPassword.value = "";
-
   if (mode === "login") {
     elements.authTabLogin.classList.add("active");
     elements.authTabRegister.classList.remove("active");
-    elements.authSubmitBtn.textContent = "Sign In";
+    elements.authSubmitBtn.textContent = "Access Command Center";
   } else {
     elements.authTabRegister.classList.add("active");
     elements.authTabLogin.classList.remove("active");
@@ -138,69 +121,47 @@ function showAuthModal(mode = "login") {
 }
 
 function hideAuthModal() {
-  elements.authModal.classList.remove("active");
+  elements.authModal.classList.remove("visible");
 }
 
 function setAuthenticatedUser(user) {
   state.currentUser = user;
   hideAuthModal();
-
-  if (elements.usernameDisplay) {
-    elements.usernameDisplay.textContent = user.username;
-  }
-  if (elements.userRoleBadge) {
-    elements.userRoleBadge.textContent = user.role;
-    elements.userRoleBadge.className = `status-pill ${user.role === "OWNER" ? "online" : ""}`;
-  }
   if (elements.userProfilePill) {
     elements.userProfilePill.style.display = "flex";
+    elements.usernameDisplay.textContent = user.username;
+    elements.userRoleBadge.textContent = user.role || "USER";
   }
-
-  // Load conversations
   loadConversations();
 }
 
 async function handleAuthSubmit(e) {
   e.preventDefault();
-  elements.authErrorBanner.style.display = "none";
-
-  const isLogin = elements.authTabLogin.classList.contains("active");
   const username = elements.authUsername.value.trim();
   const password = elements.authPassword.value;
+  const isRegister = elements.authTabRegister.classList.contains("active");
 
-  if (!username || !password) {
-    showAuthError("Please provide both username and password.");
-    return;
-  }
-
+  elements.authErrorBanner.style.display = "none";
   elements.authSubmitBtn.disabled = true;
-  elements.authSubmitBtn.textContent = "Authenticating...";
 
   try {
-    let res;
-    if (isLogin) {
-      res = await window.api.login(username, password);
-      showToast(`Welcome back, ${res.user.username}!`);
-    } else {
-      res = await window.api.register(username, password);
-      showToast(`Account created successfully for ${res.user.username}!`);
+    if (isRegister) {
+      await window.api.register(username, password);
+      showToast("Account created successfully. Logging in...");
     }
-    setAuthenticatedUser(res.user);
+    const loginRes = await window.api.login(username, password);
+    setAuthenticatedUser(loginRes.user);
+    showToast(`Welcome back, ${loginRes.user.username}!`);
   } catch (err) {
-    showAuthError(err.message);
+    elements.authErrorBanner.textContent = err.message || "Authentication failed.";
+    elements.authErrorBanner.style.display = "block";
   } finally {
     elements.authSubmitBtn.disabled = false;
-    elements.authSubmitBtn.textContent = isLogin ? "Sign In" : "Create Account";
   }
-}
-
-function showAuthError(msg) {
-  elements.authErrorBanner.textContent = msg;
-  elements.authErrorBanner.style.display = "block";
 }
 
 async function handleLogout() {
-  if (confirm("Are you sure you want to log out?")) {
+  if (confirm("Sign out of Personal AI Command Center?")) {
     await window.api.logout();
     state.currentUser = null;
     state.conversations = [];
@@ -209,11 +170,128 @@ async function handleLogout() {
     renderConversations();
     renderChatStream();
     showAuthModal("login");
-    showToast("Logged out successfully.");
+    showToast("Signed out.");
   }
 }
 
-// --- Conversations Management ---
+// ============================================================================
+// 3. Voice Interaction System (Speech-to-Text & Text-to-Speech)
+// ============================================================================
+
+function initVoiceSystem() {
+  // Speech Recognition (STT)
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SpeechRec) {
+    state.speechRecognition = new SpeechRec();
+    state.speechRecognition.continuous = false;
+    state.speechRecognition.interimResults = true;
+    state.speechRecognition.lang = "hi-IN"; // Supports Hindi & English naturally
+
+    state.speechRecognition.onstart = () => {
+      state.isListening = true;
+      elements.voiceBtn.classList.add("listening");
+      elements.voiceMicIcon.textContent = "🔴";
+      elements.recordingStatusText.style.display = "inline";
+    };
+
+    state.speechRecognition.onresult = (e) => {
+      let transcript = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        transcript += e.results[i][0].transcript;
+      }
+      elements.chatTextarea.value = transcript;
+      autoResizeTextarea();
+    };
+
+    state.speechRecognition.onerror = (e) => {
+      console.warn("Speech recognition error:", e.error);
+      stopListening();
+    };
+
+    state.speechRecognition.onend = () => {
+      stopListening();
+      // If text captured, focus textarea
+      if (elements.chatTextarea.value.trim().length > 0) {
+        elements.chatTextarea.focus();
+      }
+    };
+  }
+
+  // Voice TTS Toggle Button
+  if (elements.voiceTtsToggle) {
+    elements.voiceTtsToggle.onclick = () => {
+      state.autoSpeak = !state.autoSpeak;
+      elements.voiceTtsToggle.classList.toggle("enabled", state.autoSpeak);
+      elements.ttsIcon.textContent = state.autoSpeak ? "🔊" : "🔈";
+      elements.ttsLabel.textContent = state.autoSpeak ? "Voice Reply: ON" : "Voice Reply: Off";
+      showToast(state.autoSpeak ? "🔊 Automatic voice speech enabled!" : "🔈 Voice speech disabled.");
+    };
+  }
+}
+
+function toggleListening() {
+  if (!state.speechRecognition) {
+    alert("Speech recognition is not supported in this browser. Please use Microsoft Edge or Google Chrome.");
+    return;
+  }
+
+  if (state.isListening) {
+    state.speechRecognition.stop();
+  } else {
+    try {
+      state.speechRecognition.start();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+}
+
+function stopListening() {
+  state.isListening = false;
+  elements.voiceBtn.classList.remove("listening");
+  elements.voiceMicIcon.textContent = "🎙️";
+  elements.recordingStatusText.style.display = "none";
+}
+
+function speakText(text, btnElement = null) {
+  if (!("speechSynthesis" in window)) return;
+
+  // If already speaking, cancel
+  if (window.speechSynthesis.speaking) {
+    window.speechSynthesis.cancel();
+    if (btnElement) btnElement.classList.remove("speaking");
+    return;
+  }
+
+  // Clean markdown for spoken audio
+  const cleanSpoken = text
+    .replace(/[#*_`$]/g, "")
+    .replace(/\[.*?\]\(.*?\)/g, "")
+    .replace(/```[\s\S]*?```/g, "Code block omitted.")
+    .replace(/\$\$.*?\$\$/g, "formula")
+    .trim();
+
+  const utterance = new SpeechSynthesisUtterance(cleanSpoken);
+  utterance.rate = 1.0;
+  utterance.pitch = 1.0;
+
+  // Prefer Indian or standard English / Hindi voice
+  const voices = window.speechSynthesis.getVoices();
+  const preferredVoice = voices.find((v) => v.lang.includes("IN") || v.lang.includes("hi") || v.lang.includes("en-US"));
+  if (preferredVoice) utterance.voice = preferredVoice;
+
+  if (btnElement) {
+    btnElement.classList.add("speaking");
+    utterance.onend = () => btnElement.classList.remove("speaking");
+    utterance.onerror = () => btnElement.classList.remove("speaking");
+  }
+
+  window.speechSynthesis.speak(utterance);
+}
+
+// ============================================================================
+// 4. Conversation & Chat Stream
+// ============================================================================
 
 async function loadConversations() {
   try {
@@ -221,14 +299,13 @@ async function loadConversations() {
     state.conversations = list || [];
     renderConversations();
 
-    // If there is an active conversation, or load the most recent one
     if (state.conversations.length > 0 && !state.activeConversationId) {
       selectConversation(state.conversations[0].id);
     } else if (state.conversations.length === 0) {
       startNewConversation();
     }
   } catch (err) {
-    console.error("Failed to load conversations:", err);
+    console.error("Failed to load sessions:", err);
   }
 }
 
@@ -237,10 +314,10 @@ function renderConversations() {
 
   if (state.conversations.length === 0) {
     const emptyEl = document.createElement("div");
-    emptyEl.style.padding = "16px";
+    emptyEl.style.padding = "12px 14px";
     emptyEl.style.color = "var(--text-muted)";
-    emptyEl.style.fontSize = "12.5px";
-    emptyEl.textContent = "No conversations yet. Start a new session!";
+    emptyEl.style.fontSize = "12px";
+    emptyEl.textContent = "No active sessions. Start a new one!";
     elements.conversationsList.appendChild(emptyEl);
     return;
   }
@@ -255,35 +332,24 @@ function renderConversations() {
     };
 
     const titleSpan = document.createElement("span");
-    titleSpan.className = "conversation-title-text";
+    titleSpan.style.overflow = "hidden";
+    titleSpan.style.textOverflow = "ellipsis";
+    titleSpan.style.whiteSpace = "nowrap";
     titleSpan.textContent = conv.title || "Untitled Session";
 
     const actions = document.createElement("div");
     actions.className = "conversation-actions";
 
-    // Rename Button
-    const renameBtn = document.createElement("span");
-    renameBtn.className = "action-icon";
-    renameBtn.title = "Rename";
-    renameBtn.textContent = "✏️";
-    renameBtn.onclick = (e) => {
-      e.stopPropagation();
-      renameConversation(conv.id, conv.title);
-    };
-
-    // Delete Button
-    const deleteBtn = document.createElement("span");
-    deleteBtn.className = "action-icon";
-    deleteBtn.title = "Delete";
-    deleteBtn.textContent = "🗑️";
-    deleteBtn.onclick = (e) => {
+    const delBtn = document.createElement("span");
+    delBtn.style.cursor = "pointer";
+    delBtn.textContent = "🗑️";
+    delBtn.title = "Delete Session";
+    delBtn.onclick = (e) => {
       e.stopPropagation();
       deleteConversation(conv.id);
     };
 
-    actions.appendChild(renameBtn);
-    actions.appendChild(deleteBtn);
-
+    actions.appendChild(delBtn);
     item.appendChild(titleSpan);
     item.appendChild(actions);
     elements.conversationsList.appendChild(item);
@@ -299,10 +365,9 @@ async function selectConversation(id) {
     elements.workspaceHeaderTitle.textContent = conv.title;
   }
 
-  // Load messages
   try {
-    const msgs = await window.api.getMessages(id);
-    state.activeMessages = msgs || [];
+    const messages = await window.api.getMessages(id);
+    state.activeMessages = messages || [];
     renderChatStream();
   } catch (err) {
     console.error("Failed to load messages:", err);
@@ -310,631 +375,428 @@ async function selectConversation(id) {
 }
 
 async function startNewConversation() {
-  state.activeConversationId = null;
-  state.activeMessages = [];
-  if (elements.workspaceHeaderTitle) {
-    elements.workspaceHeaderTitle.textContent = "New Conversation";
-  }
-  renderConversations();
-  renderChatStream();
-  elements.chatTextarea.focus();
-}
-
-async function renameConversation(id, currentTitle) {
-  const newTitle = prompt("Enter new conversation title:", currentTitle);
-  if (newTitle && newTitle.trim() && newTitle.trim() !== currentTitle) {
-    try {
-      await window.api.updateConversationTitle(id, newTitle.trim());
-      const conv = state.conversations.find((c) => c.id === id);
-      if (conv) conv.title = newTitle.trim();
-      renderConversations();
-      if (state.activeConversationId === id) {
-        elements.workspaceHeaderTitle.textContent = newTitle.trim();
-      }
-      showToast("Conversation renamed.");
-    } catch (err) {
-      showToast(`Error: ${err.message}`);
-    }
+  try {
+    const conv = await window.api.createConversation("New Intelligence Session");
+    state.conversations.unshift(conv);
+    state.activeConversationId = conv.id;
+    state.activeMessages = [];
+    renderConversations();
+    renderChatStream();
+  } catch (err) {
+    console.error("Create session failed:", err);
   }
 }
 
 async function deleteConversation(id) {
-  if (confirm("Delete this conversation and its message history?")) {
+  if (confirm("Delete this session?")) {
     try {
       await window.api.deleteConversation(id);
       state.conversations = state.conversations.filter((c) => c.id !== id);
       if (state.activeConversationId === id) {
-        if (state.conversations.length > 0) {
-          selectConversation(state.conversations[0].id);
-        } else {
-          startNewConversation();
-        }
-      } else {
-        renderConversations();
+        state.activeConversationId = null;
+        state.activeMessages = [];
       }
-      showToast("Conversation deleted.");
+      renderConversations();
+      renderChatStream();
+      if (state.conversations.length > 0) {
+        selectConversation(state.conversations[0].id);
+      } else {
+        startNewConversation();
+      }
     } catch (err) {
-      showToast(`Error: ${err.message}`);
+      showToast("Delete failed: " + err.message);
     }
   }
 }
 
-// --- Chat Stream Rendering ---
+// ============================================================================
+// 5. Chat Stream Rendering & Markdown / Math Formatting
+// ============================================================================
 
 function renderChatStream() {
   elements.chatStream.innerHTML = "";
 
   if (state.activeMessages.length === 0) {
-    renderWelcomeHero();
+    // Render Empty State Hero with 4 Starter Cards
+    elements.chatStream.innerHTML = `
+      <div class="hero-empty-state">
+        <div class="neural-orb-wrapper">
+          <div class="orbital-ring"></div>
+          <div class="orbital-ring reverse"></div>
+          <div class="neural-orb">⚡</div>
+        </div>
+        <h2 class="hero-title">MY PERSONAL AI COMMAND CENTER</h2>
+        <p class="hero-subtitle">
+          Autonomous intelligence powered by Google AI Studio and RTX 3050.
+          Solve complex math, synthesize software, and coordinate multi-agent workflows.
+        </p>
+
+        <div class="starter-cards-grid">
+          <div class="starter-card" onclick="useStarterPrompt('Solve this math problem step by step: (25 * 14) + sqrt(576) - (120 / 6)')">
+            <div class="starter-card-icon">🧮</div>
+            <div class="starter-card-title">Solve Complex Math</div>
+            <div class="starter-card-desc">PEMDAS, algebra, calculus, and step-by-step arithmetic.</div>
+          </div>
+
+          <div class="starter-card" onclick="useStarterPrompt('Perform a deep architectural analysis of our autonomous personal AI platform.')">
+            <div class="starter-card-icon">🔍</div>
+            <div class="starter-card-title">Google AI Deep Reasoning</div>
+            <div class="starter-card-desc">Analyze system architecture and complex logic with Gemini.</div>
+          </div>
+
+          <div class="starter-card" onclick="useStarterPrompt('Write a clean, optimized Python asynchronous worker using asyncio and dataclasses.')">
+            <div class="starter-card-icon">💻</div>
+            <div class="starter-card-title">Code Architecture</div>
+            <div class="starter-card-desc">Production Python code, algorithms, and APIs.</div>
+          </div>
+
+          <div class="starter-card" onclick="useStarterPrompt('Perform a zero-trust security audit of active DPAPI encryption and process sandboxes.')">
+            <div class="starter-card-icon">🛡️</div>
+            <div class="starter-card-title">Zero-Trust Security Scan</div>
+            <div class="starter-card-desc">Audit Windows memory, Job Objects, and permissions.</div>
+          </div>
+        </div>
+      </div>
+    `;
     return;
   }
 
   state.activeMessages.forEach((msg) => {
-    appendMessageBubble(msg.role, msg.content, msg.reasoning, msg.meta);
+    appendMessageElement(msg.role, msg.content, false);
   });
 
-  scrollToBottom();
+  scrollChatToBottom();
 }
 
-function renderWelcomeHero() {
-  const hero = document.createElement("div");
-  hero.className = "welcome-hero";
-  hero.innerHTML = `
-    <div class="welcome-icon">⚡</div>
-    <h2 class="welcome-title">MY PERSONAL AI</h2>
-    <p class="welcome-desc">
-      Your 100% offline, local-first autonomous intelligence platform powered by Qwen 2.5 on NVIDIA RTX 3050.
-    </p>
-    <div class="suggestion-grid">
-      <div class="suggestion-card" onclick="sendSuggestion('Inspect system hardware specifications and GPU status')">
-        <div class="suggestion-title">🖥️ Hardware Inspection</div>
-        <div class="suggestion-subtitle">Query GPU, VRAM and offline model health</div>
-      </div>
-      <div class="suggestion-card" onclick="sendSuggestion('Calculate sqrt(144) * 5 + 40 with reasoning steps')">
-        <div class="suggestion-title">🧮 Autonomous Calculation</div>
-        <div class="suggestion-subtitle">Decompose multi-step math with sandbox tools</div>
-      </div>
-      <div class="suggestion-card" onclick="sendSuggestion('Analyze Python file security best practices')">
-        <div class="suggestion-title">🛡️ Cybersecurity Analysis</div>
-        <div class="suggestion-subtitle">Verify code against path traversal and IDOR</div>
-      </div>
-      <div class="suggestion-card" onclick="sendSuggestion('What is today\\'s date and current system time?')">
-        <div class="suggestion-title">⏱️ Sandbox Datetime Tool</div>
-        <div class="suggestion-subtitle">Verify real-time system tool execution</div>
-      </div>
-    </div>
-  `;
-  elements.chatStream.appendChild(hero);
-}
-
-window.sendSuggestion = function (text) {
-  elements.chatTextarea.value = text;
-  handleSendMessage();
-};
-
-function appendMessageBubble(role, content, reasoning = null, meta = null) {
+function appendMessageElement(role, content, shouldScroll = true) {
+  const isUser = role === "user";
   const row = document.createElement("div");
-  row.className = `message-row ${role}`;
+  row.className = `chat-message-row ${isUser ? "user-row" : "assistant-row"}`;
 
+  // Avatar
   const avatar = document.createElement("div");
-  avatar.className = "message-avatar";
-  avatar.textContent = role === "user" ? "U" : "AI";
+  avatar.className = `avatar-badge ${isUser ? "user-avatar" : "ai-avatar"}`;
+  avatar.textContent = isUser ? "👤" : "⚡";
 
-  const body = document.createElement("div");
-  body.className = "message-body";
+  // Content Wrapper
+  const contentWrapper = document.createElement("div");
+  contentWrapper.className = "message-content-wrapper";
 
-  // If reasoning trace exists
-  if (reasoning) {
-    const reasoningBox = document.createElement("div");
-    reasoningBox.className = "reasoning-box";
-
-    const rHeader = document.createElement("div");
-    rHeader.className = "reasoning-header";
-    rHeader.innerHTML = `<span>🧠 Autonomous Reasoning Trace</span><span>▼</span>`;
-    
-    const rContent = document.createElement("div");
-    rContent.className = "reasoning-content";
-    rContent.textContent = reasoning;
-
-    rHeader.onclick = () => {
-      const isHidden = rContent.style.display === "none";
-      rContent.style.display = isHidden ? "block" : "none";
-      rHeader.querySelector("span:last-child").textContent = isHidden ? "▼" : "▶";
-    };
-
-    reasoningBox.appendChild(rHeader);
-    reasoningBox.appendChild(rContent);
-    body.appendChild(reasoningBox);
-  }
-
+  // Bubble
   const bubble = document.createElement("div");
   bubble.className = "message-bubble";
-  bubble.innerHTML = formatMarkdown(content);
+  bubble.innerHTML = formatMessageContent(content);
 
-  body.appendChild(bubble);
+  contentWrapper.appendChild(bubble);
 
-  // Meta stats
-  if (meta) {
-    const metaRow = document.createElement("div");
-    metaRow.className = "message-meta";
-    if (meta.tokens_per_sec) {
-      metaRow.innerHTML += `<span class="metric-pill">⚡ ${meta.tokens_per_sec} tok/s</span>`;
-    }
-    if (meta.latency_sec) {
-      metaRow.innerHTML += `<span class="metric-pill">⏱️ ${meta.latency_sec}s</span>`;
-    }
-    body.appendChild(metaRow);
+  // Assistant Action Bar (Speak Button, Model Tag)
+  if (!isUser) {
+    const actionBar = document.createElement("div");
+    actionBar.className = "message-actions-bar";
+
+    const speakBtn = document.createElement("button");
+    speakBtn.className = "btn-message-action";
+    speakBtn.innerHTML = "<span>🔊</span><span>Listen</span>";
+    speakBtn.onclick = () => speakText(content, speakBtn);
+
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "btn-message-action";
+    copyBtn.innerHTML = "<span>📋</span><span>Copy</span>";
+    copyBtn.onclick = () => {
+      navigator.clipboard.writeText(content);
+      showToast("Copied to clipboard!");
+    };
+
+    actionBar.appendChild(speakBtn);
+    actionBar.appendChild(copyBtn);
+    contentWrapper.appendChild(actionBar);
   }
 
-  row.appendChild(avatar);
-  row.appendChild(body);
+  if (isUser) {
+    row.appendChild(contentWrapper);
+    row.appendChild(avatar);
+  } else {
+    row.appendChild(avatar);
+    row.appendChild(contentWrapper);
+  }
+
   elements.chatStream.appendChild(row);
-  scrollToBottom();
 
-  return { row, bubble, body };
+  if (shouldScroll) {
+    scrollChatToBottom();
+  }
+
+  return bubble;
 }
 
-function escapeHTML(str) {
-  if (!str) return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
+function formatMessageContent(rawText) {
+  if (!rawText) return "";
 
-function formatMarkdown(text) {
-  if (!text) return "";
-  // Safe HTML escape
-  let safe = escapeHTML(text);
+  let formatted = rawText;
 
-  // Code blocks: ```lang\ncode\n```
-  safe = safe.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
-    return `<pre><code class="language-${lang}">${code.trim()}</code></pre>`;
+  // 1. Math block formatting ($$ ... $$)
+  formatted = formatted.replace(/\$\$([\s\S]*?)\$\$/g, (match, formula) => {
+    return `<div class="math-formula-box">📐 ${escapeHtml(formula.trim())}</div>`;
   });
 
-  // Inline code: `code`
-  safe = safe.replace(/`([^`]+)`/g, "<code>$1</code>");
+  // 2. Code blocks (```language ... ```)
+  formatted = formatted.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
+    const safeLang = lang || "code";
+    const safeCode = escapeHtml(code.trim());
+    return `
+      <div class="code-block-container">
+        <div class="code-block-header">
+          <span>${safeLang.toUpperCase()}</span>
+          <button class="btn-copy-code" onclick="navigator.clipboard.writeText(decodeURIComponent('${encodeURIComponent(code.trim())}')); showToast('Code copied!');">Copy</button>
+        </div>
+        <pre class="code-block-pre"><code>${safeCode}</code></pre>
+      </div>
+    `;
+  });
 
-  // Bold: **text**
-  safe = safe.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  // 3. Inline code (`code`)
+  formatted = formatted.replace(/`([^`]+)`/g, '<code style="background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 12.5px; color: #38bdf8;">$1</code>');
 
-  // Line breaks
-  safe = safe.replace(/\n/g, "<br>");
+  // 4. Headers & Bold
+  formatted = formatted.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+  formatted = formatted.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+  formatted = formatted.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+  formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
-  return safe;
+  // 5. Line breaks to paragraphs
+  const paragraphs = formatted.split("\n\n").filter((p) => p.trim().length > 0);
+  if (paragraphs.length > 1) {
+    formatted = paragraphs.map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).join("");
+  } else {
+    formatted = `<p>${formatted.replace(/\n/g, "<br>")}</p>`;
+  }
+
+  return formatted;
 }
 
-function scrollToBottom() {
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function scrollChatToBottom() {
   elements.chatStream.scrollTop = elements.chatStream.scrollHeight;
 }
 
-// --- Message Sending Flow (Real SSE Streaming) ---
+function useStarterPrompt(prompt) {
+  elements.chatTextarea.value = prompt;
+  autoResizeTextarea();
+  sendMessage();
+}
 
-async function handleSendMessage() {
-  const content = elements.chatTextarea.value.trim();
-  if (!content || state.isGenerating) return;
+// ============================================================================
+// 6. Sending Messages & Autonomous Response
+// ============================================================================
 
-  // Clear input and reset height
+async function sendMessage() {
+  const text = elements.chatTextarea.value.trim();
+  if (!text || state.isGenerating) return;
+
+  // Clear input
   elements.chatTextarea.value = "";
-  elements.chatTextarea.style.height = "auto";
-
-  // Remove welcome hero if present
-  const hero = elements.chatStream.querySelector(".welcome-hero");
-  if (hero) hero.remove();
-
-  // If no conversation exists yet, create one
-  if (!state.activeConversationId) {
-    try {
-      const convTitle = content.slice(0, 32) + (content.length > 32 ? "..." : "");
-      const newConv = await window.api.createConversation(convTitle);
-      state.activeConversationId = newConv.id;
-      state.conversations.unshift(newConv);
-      renderConversations();
-      elements.workspaceHeaderTitle.textContent = newConv.title;
-    } catch (e) {
-      console.warn("Could not create conversation, will proceed anyway:", e);
-    }
-  }
-
-  // Append user bubble
-  appendMessageBubble("user", content);
-  state.activeMessages.push({ role: "user", content });
-
-  // Update UI to generating state
+  autoResizeTextarea();
   state.isGenerating = true;
-  updateGeneratingUI(true);
+  elements.sendBtn.disabled = true;
 
-  // Prepare Assistant bubble
-  const { row: assistantRow, bubble: assistantBubble, body: assistantBody } = appendMessageBubble("assistant", "");
-  const cursor = document.createElement("span");
-  cursor.className = "cursor-pulse";
-  assistantBubble.appendChild(cursor);
+  // Append user message
+  appendMessageElement("user", text);
 
-  state.abortController = new AbortController();
+  // Create active bubble for assistant
+  const assistantBubble = appendMessageElement("assistant", "Thinking...");
 
-  if (state.mode === "think") {
-    // Mode = Deep Think (Autonomous Multi-Step Reasoning)
-    executeAutonomousThink(content, assistantBubble, assistantBody, cursor);
-  } else {
-    // Mode = Standard Chat
-    executeStandardChat(content, assistantBubble, assistantBody, cursor);
-  }
-}
+  try {
+    const selectedModel = elements.headerModelSelect ? elements.headerModelSelect.value : "gemini-flash-lite-latest";
 
-async function executeStandardChat(content, bubble, body, cursor) {
-  let fullResponse = "";
-  const startTime = Date.now();
-
-  const payload = {
-    messages: state.activeMessages.map((m) => ({ role: m.role, content: m.content })),
-    model: "qwen2.5-coder:3b",
-    conversation_id: state.activeConversationId,
-  };
-
-  await window.api.streamChat(payload, {
-    signal: state.abortController.signal,
-    onChunk: (chunk) => {
-      fullResponse += chunk;
-      cursor.remove();
-      bubble.innerHTML = formatMarkdown(fullResponse);
-      bubble.appendChild(cursor);
-      scrollToBottom();
-    },
-    onDone: () => {
-      cursor.remove();
-      state.isGenerating = false;
-      updateGeneratingUI(false);
-
-      const latency = ((Date.now() - startTime) / 1000).toFixed(2);
-      const estTokens = Math.max(1, Math.round(fullResponse.length / 4));
-      const tokPerSec = (estTokens / Math.max(0.1, latency)).toFixed(1);
-
-      const metaRow = document.createElement("div");
-      metaRow.className = "message-meta";
-      metaRow.innerHTML = `
-        <span class="metric-pill">⚡ ${tokPerSec} tok/s</span>
-        <span class="metric-pill">⏱️ ${latency}s</span>
-      `;
-      body.appendChild(metaRow);
-
-      state.activeMessages.push({
-        role: "assistant",
-        content: fullResponse,
-        meta: { tokens_per_sec: tokPerSec, latency_sec: latency },
-      });
-    },
-    onError: (err) => {
-      cursor.remove();
-      state.isGenerating = false;
-      updateGeneratingUI(false);
-      bubble.innerHTML = `<span style="color: var(--status-danger)">Error: ${escapeHTML(err.message)}</span>`;
-    },
-  });
-}
-
-async function executeAutonomousThink(content, bubble, body, cursor) {
-  let fullAnswer = "";
-  let reasoningTrace = "";
-  const startTime = Date.now();
-
-  // Reset live planning inspector
-  resetPlanningInspector(content);
-
-  await window.api.streamThink(content, state.activeConversationId, {
-    signal: state.abortController.signal,
-    onEvent: (event) => {
-      const phase = event.phase;
-
-      if (phase === "reasoning") {
-        updatePlanningStep("reasoning", "completed", `Intent: ${event.intent || "query"} | Complexity: ${event.complexity || 1}`);
-        if (event.analysis) reasoningTrace += event.analysis + "\n";
-      } else if (phase === "planning") {
-        updatePlanningStep("planning", "completed", `Plan formulated with ${event.total_steps || 1} steps.`);
-        if (event.plan) reasoningTrace += `Plan: ${JSON.stringify(event.plan, null, 2)}\n`;
-      } else if (phase === "step_start") {
-        updatePlanningStep("execution", "active", `Executing step: ${event.step_name || event.action || "tool"}`);
-      } else if (phase === "step_complete") {
-        updatePlanningStep("execution", "completed", `Step completed successfully.`);
-      } else if (phase === "verification") {
-        const conf = event.confidence ? `${(event.confidence * 100).toFixed(0)}%` : "100%";
-        updatePlanningStep("verification", "completed", `Verified with ${conf} confidence.`);
-      } else if (phase === "complete" || phase === "token" || !phase) {
-        const token = event.text || event.token || event.answer || (typeof event === "string" ? event : "");
-        fullAnswer += token;
-        cursor.remove();
-        bubble.innerHTML = formatMarkdown(fullAnswer);
-        bubble.appendChild(cursor);
-        scrollToBottom();
+    // Persist user message to conversation history
+    if (state.activeConversationId) {
+      try {
+        await window.api.addMessage(state.activeConversationId, "user", text);
+      } catch (e) {
+        console.warn("Save user msg error:", e);
       }
-    },
-    onDone: () => {
-      cursor.remove();
-      state.isGenerating = false;
-      updateGeneratingUI(false);
+    }
 
-      // Prepend reasoning box if available
-      if (reasoningTrace) {
-        const rBox = document.createElement("div");
-        rBox.className = "reasoning-box";
-        rBox.innerHTML = `
-          <div class="reasoning-header">
-            <span>🧠 Autonomous Reasoning Trace</span>
-            <span>▼</span>
-          </div>
-          <div class="reasoning-content">${reasoningTrace}</div>
-        `;
-        body.insertBefore(rBox, bubble);
+    // Call unified chat router (supports Gemini + Ollama)
+    const chatReq = {
+      messages: [{ role: "user", content: text }],
+      model: selectedModel,
+      stream: false,
+    };
+
+    const response = await window.api.sendChat(chatReq);
+    const replyContent = response.content || response.answer || "Computation complete.";
+
+    // Persist assistant reply
+    if (state.activeConversationId) {
+      try {
+        await window.api.addMessage(state.activeConversationId, "assistant", replyContent);
+      } catch (e) {
+        console.warn("Save assistant msg error:", e);
       }
-
-      const latency = ((Date.now() - startTime) / 1000).toFixed(2);
-      const metaRow = document.createElement("div");
-      metaRow.className = "message-meta";
-      metaRow.innerHTML = `<span class="metric-pill">⏱️ ${latency}s</span><span class="metric-pill">🤖 Autonomous Verification: Passed</span>`;
-      body.appendChild(metaRow);
-
-      state.activeMessages.push({
-        role: "assistant",
-        content: fullAnswer,
-        reasoning: reasoningTrace,
-        meta: { latency_sec: latency },
-      });
-    },
-    onError: (err) => {
-      cursor.remove();
-      state.isGenerating = false;
-      updateGeneratingUI(false);
-      bubble.innerHTML = `<span style="color: var(--status-danger)">Error: ${escapeHTML(err.message)}</span>`;
-    },
-  });
-}
-
-function updateGeneratingUI(isGenerating) {
-  elements.sendBtn.disabled = isGenerating;
-  elements.sendBtn.innerHTML = isGenerating ? "■" : "▲";
-  elements.sendBtn.title = isGenerating ? "Generating response..." : "Send message";
-}
-
-// --- Inspector Drawer Logic ---
-
-function resetPlanningInspector(taskQuery) {
-  elements.planningStepsContainer.innerHTML = `
-    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
-      Task: <strong style="color: var(--text-main);">${taskQuery.slice(0, 40)}...</strong>
-    </div>
-    <div class="planning-step-item active" id="step-reasoning">
-      <div>
-        <div class="planning-step-name">1. Intent Classification & Reasoning</div>
-        <div class="planning-step-detail">Analyzing task requirements...</div>
-      </div>
-    </div>
-    <div class="planning-step-item" id="step-planning">
-      <div>
-        <div class="planning-step-name">2. Hierarchical Planning</div>
-        <div class="planning-step-detail">Pending task decomposition...</div>
-      </div>
-    </div>
-    <div class="planning-step-item" id="step-execution">
-      <div>
-        <div class="planning-step-name">3. Sandboxed Tool Execution</div>
-        <div class="planning-step-detail">Pending tool invocation...</div>
-      </div>
-    </div>
-    <div class="planning-step-item" id="step-verification">
-      <div>
-        <div class="planning-step-name">4. Self-Correction & Verification</div>
-        <div class="planning-step-detail">Pending final check...</div>
-      </div>
-    </div>
-  `;
-}
-
-function updatePlanningStep(stepKey, status, detailText) {
-  const el = document.getElementById(`step-${stepKey}`);
-  if (!el) return;
-
-  el.className = `planning-step-item ${status}`;
-  const detailEl = el.querySelector(".planning-step-detail");
-  if (detailEl && detailText) {
-    detailEl.textContent = detailText;
-  }
-}
-
-async function loadSystemData() {
-  try {
-    const [health, sysInfo, tools] = await Promise.all([
-      window.api.getHealth().catch(() => null),
-      window.api.getSystemInfo().catch(() => null),
-      window.api.listTools().catch(() => null),
-    ]);
-
-    if (sysInfo && elements.hardwareDetailsContainer) {
-      elements.hardwareDetailsContainer.innerHTML = `
-        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px;">
-          <div><strong>GPU:</strong> ${sysInfo.gpu || "NVIDIA RTX 3050"}</div>
-          <div><strong>RAM:</strong> ${sysInfo.ram || "16 GB"}</div>
-          <div><strong>OS:</strong> ${sysInfo.os} (${sysInfo.architecture})</div>
-          <div><strong>Python:</strong> ${sysInfo.python_version}</div>
-          <div><strong>Engine:</strong> Ollama (Local CUDA0)</div>
-          <div><strong>Cloud:</strong> 100% Offline (Disabled)</div>
-        </div>
-      `;
     }
 
-    if (tools && tools.tools && elements.activeToolsList) {
-      elements.activeToolsList.innerHTML = tools.tools
-        .map(
-          (t) => `
-          <div class="tool-badge" title="${t.description || ''}">
-            🔧 ${t.name} (${t.permission || 'safe'})
-          </div>
-        `
-        )
-        .join("");
+    assistantBubble.innerHTML = formatMessageContent(replyContent);
+    scrollChatToBottom();
+
+    // Auto-speak if enabled
+    if (state.autoSpeak) {
+      speakText(replyContent);
     }
-
-    // Load initial HITL approvals
-    loadHITLApprovals();
-  } catch (e) {
-    console.warn("Could not fetch system telemetry:", e);
-  }
-}
-
-async function loadHITLApprovals() {
-  if (!elements.hitlContainer) return;
-  try {
-    const approvals = await window.api.getApprovals("PENDING");
-    if (!approvals || approvals.length === 0) {
-      elements.hitlContainer.innerHTML = `
-        <div class="approval-card">
-          <div class="approval-badge">🛡️ Sensitive Action Policy</div>
-          <div style="font-size: 12px; color: var(--text-secondary);">
-            No actions currently pending human confirmation. Dangerous operations will appear here with Allow / Deny controls.
-          </div>
-          <div class="status-pill online" style="width: fit-content;">
-            <span>HITL Engine: Active & Enforced</span>
-          </div>
-        </div>
-      `;
-      return;
-    }
-
-    elements.hitlContainer.innerHTML = approvals.map(appr => `
-      <div class="approval-card" id="approval-${escapeHTML(appr.id)}">
-        <div class="approval-badge">⚠️ Action Authorization Required</div>
-        <div style="font-size: 13px; font-weight: 600; color: var(--text-main);">
-          Agent: ${escapeHTML(appr.agent_name)} → ${escapeHTML(appr.action)}
-        </div>
-        <div style="font-size: 12px; color: var(--text-secondary);">
-          ${escapeHTML(appr.reason)}
-        </div>
-        <div style="font-size: 11px; color: var(--text-muted);">
-          Risk Level: <strong style="color: var(--status-danger);">${escapeHTML(appr.risk_level)}</strong>
-        </div>
-        <div class="approval-actions">
-          <button class="btn btn-primary" onclick="resolveHITL('${escapeHTML(appr.id)}', true)">Authorize (Allow)</button>
-          <button class="btn btn-danger" onclick="resolveHITL('${escapeHTML(appr.id)}', false)">Deny (Block)</button>
-        </div>
-      </div>
-    `).join("");
   } catch (err) {
-    console.warn("Could not load HITL approvals:", err);
+    console.error("Message send error:", err);
+    assistantBubble.innerHTML = `<span style="color: var(--status-danger);">⚠️ Error: ${escapeHtml(err.message)}</span>`;
+  } finally {
+    state.isGenerating = false;
+    elements.sendBtn.disabled = false;
   }
 }
 
-window.resolveHITL = async function(id, approved) {
-  try {
-    await window.api.resolveApproval(id, approved);
-    showToast(`Approval ${id.slice(0, 8)}... ${approved ? 'AUTHORIZED' : 'DENIED'}.`);
-    loadHITLApprovals();
-  } catch (err) {
-    showToast(`Failed to resolve approval: ${err.message}`);
-  }
-};
-
-// --- Event Listeners Setup ---
+// ============================================================================
+// 7. Event Listeners & UI Controls
+// ============================================================================
 
 function setupEventListeners() {
   // Theme Toggle
   if (elements.themeToggleBtn) {
     elements.themeToggleBtn.onclick = () => {
-      applyTheme(state.theme === "dark" ? "light" : "dark");
+      const nextTheme = elements.html.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      applyTheme(nextTheme);
     };
   }
 
-  // Auth Tabs
-  elements.authTabLogin.onclick = () => showAuthModal("login");
-  elements.authTabRegister.onclick = () => showAuthModal("register");
-  elements.authForm.onsubmit = handleAuthSubmit;
-  if (elements.logoutBtn) {
-    elements.logoutBtn.onclick = handleLogout;
+  // Model Selection
+  if (elements.headerModelSelect) {
+    elements.headerModelSelect.onchange = (e) => {
+      state.selectedModel = e.target.value;
+      if (elements.activeModelIndicator) {
+        const selectedText = e.target.options[e.target.selectedIndex].text;
+        elements.activeModelIndicator.textContent = "Model: " + selectedText.split("(")[0].trim();
+      }
+      showToast(`Switched model to ${state.selectedModel}`);
+    };
   }
 
-  // Sidebar Toggles
-  elements.newChatBtn.onclick = startNewConversation;
-  if (elements.sidebarToggleBtn) {
+  // Textarea Auto-Resize & Enter key to send
+  if (elements.chatTextarea) {
+    elements.chatTextarea.oninput = autoResizeTextarea;
+    elements.chatTextarea.onkeydown = (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    };
+  }
+
+  // Send Button
+  if (elements.sendBtn) {
+    elements.sendBtn.onclick = sendMessage;
+  }
+
+  // Microphone Voice Button
+  if (elements.voiceBtn) {
+    elements.voiceBtn.onclick = toggleListening;
+  }
+
+  // New Chat Button
+  if (elements.newChatBtn) {
+    elements.newChatBtn.onclick = startNewConversation;
+  }
+
+  // Clear Chat Button
+  if (elements.clearChatBtn) {
+    elements.clearChatBtn.onclick = () => {
+      if (confirm("Clear messages in this session?")) {
+        state.activeMessages = [];
+        renderChatStream();
+      }
+    };
+  }
+
+  // Sidebar Toggle
+  if (elements.sidebarToggleBtn && elements.sidebar) {
     elements.sidebarToggleBtn.onclick = () => {
-      elements.sidebar.classList.toggle("open");
+      elements.sidebar.classList.toggle("collapsed");
     };
   }
 
-  // Inspector Drawer Toggles
-  if (elements.inspectorToggleBtn) {
+  // Inspector Toggle
+  if (elements.inspectorToggleBtn && elements.inspector) {
     elements.inspectorToggleBtn.onclick = () => {
-      elements.inspector.classList.toggle("open");
+      elements.inspector.classList.toggle("collapsed");
     };
   }
 
   // Inspector Tabs
-  elements.inspectorTabs.forEach((tab) => {
-    tab.onclick = () => {
-      elements.inspectorTabs.forEach((t) => t.classList.remove("active"));
-      tab.classList.add("active");
-
-      const target = tab.dataset.target;
-      elements.inspectorTabPlanning.style.display = target === "planning" ? "block" : "none";
-      elements.inspectorTabMemory.style.display = target === "memory" ? "block" : "none";
-      elements.inspectorTabSecurity.style.display = target === "security" ? "block" : "none";
-      elements.inspectorTabHardware.style.display = target === "hardware" ? "block" : "none";
-
-      if (target === "security") {
-        loadHITLApprovals();
-      }
+  elements.inspectorTabBtns.forEach((btn) => {
+    btn.onclick = () => {
+      elements.inspectorTabBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const tabName = btn.dataset.tab;
+      Object.entries(elements.inspectorPanels).forEach(([key, panel]) => {
+        if (panel) {
+          panel.style.display = key === tabName ? "block" : "none";
+        }
+      });
     };
   });
 
-  // Mode Selection (Chat vs Deep Think)
-  elements.modeChatBtn.onclick = () => {
-    state.mode = "chat";
-    elements.modeChatBtn.classList.add("active");
-    elements.modeThinkBtn.classList.remove("active");
-    elements.chatTextarea.placeholder = "Ask anything in standard chat (Shift+Enter for newline)...";
-  };
-
-  elements.modeThinkBtn.onclick = () => {
-    state.mode = "think";
-    elements.modeThinkBtn.classList.add("active");
-    elements.modeChatBtn.classList.remove("active");
-    elements.chatTextarea.placeholder = "Assign an autonomous task with tool planning & verification...";
-    // Open planning tab in drawer
-    elements.inspectorTabs[0].click();
-  };
-
-  // Voice Interaction Button Placeholder
-  if (elements.voiceBtn) {
-    elements.voiceBtn.onclick = () => {
-      elements.voiceBtn.classList.toggle("listening");
-      const isListening = elements.voiceBtn.classList.contains("listening");
-      if (isListening) {
-        showToast("🎙️ Listening placeholder active (Audio recording ready for Phase 5)");
-      } else {
-        showToast("🎙️ Voice input stopped");
-      }
-    };
+  // Auth Form
+  if (elements.authForm) {
+    elements.authForm.onsubmit = handleAuthSubmit;
   }
 
-  // Auto-growing textarea & Enter to send
-  elements.chatTextarea.addEventListener("input", () => {
-    elements.chatTextarea.style.height = "auto";
-    elements.chatTextarea.style.height = `${Math.min(elements.chatTextarea.scrollHeight, 160)}px`;
-  });
+  if (elements.authTabLogin) {
+    elements.authTabLogin.onclick = () => showAuthModal("login");
+  }
 
-  elements.chatTextarea.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  });
+  if (elements.authTabRegister) {
+    elements.authTabRegister.onclick = () => showAuthModal("register");
+  }
 
-  elements.sendBtn.onclick = handleSendMessage;
-
-  // Global Auth Required Event
-  window.addEventListener("auth:required", () => {
-    showAuthModal("login");
-    showToast("Session expired. Please sign in again.");
-  });
+  if (elements.logoutBtn) {
+    elements.logoutBtn.onclick = handleLogout;
+  }
 }
 
-// Run bootstrap when DOM is ready
+function autoResizeTextarea() {
+  const ta = elements.chatTextarea;
+  if (!ta) return;
+  ta.style.height = "auto";
+  ta.style.height = Math.min(ta.scrollHeight, 180) + "px";
+}
+
+function applyTheme(theme) {
+  elements.html.setAttribute("data-theme", theme);
+  localStorage.setItem("app_theme", theme);
+}
+
+function showToast(message) {
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.textContent = message;
+  toast.style.background = "rgba(15, 23, 42, 0.95)";
+  toast.style.backdropFilter = "blur(12px)";
+  toast.style.border = "1px solid var(--border-neon)";
+  toast.style.color = "#f8fafc";
+  toast.style.padding = "10px 18px";
+  toast.style.borderRadius = "var(--radius-md)";
+  toast.style.fontSize = "13px";
+  toast.style.boxShadow = "0 8px 24px rgba(0,0,0,0.5)";
+  toast.style.marginTop = "8px";
+  toast.style.animation = "fadeIn 0.2s ease-out";
+
+  elements.toastContainer.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    setTimeout(() => toast.remove(), 250);
+  }, 2800);
+}
+
+// Run Initialization on DOM Ready
 document.addEventListener("DOMContentLoaded", init);

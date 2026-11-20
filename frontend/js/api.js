@@ -167,6 +167,13 @@ class ApiClient {
     return await this.request("/api/v1/models");
   }
 
+  async sendChat(payload) {
+    return await this.request("/api/v1/chat", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
   // --- Real Streaming Endpoints (SSE) ---
 
   async streamChat(payload, { onChunk, onDone, onError, signal }) {

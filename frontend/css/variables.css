@@ -1,79 +1,103 @@
-/* MY PERSONAL AI — Design Tokens & Theming */
+/* MY PERSONAL AI — Neo-Intelligence Design System Tokens */
 
 :root {
-  /* Color Palette - Dark Theme (Default) */
-  --bg-app: #090d16;
-  --bg-sidebar: #0f1422;
-  --bg-card: #141b2d;
-  --bg-card-hover: #1b243b;
-  --bg-input: #111726;
-  --border-subtle: #1e293b;
-  --border-highlight: #334155;
+  /* Surface & Void Colors - Ultra-Deep Obsidian */
+  --bg-app: #07090e;
+  --bg-sidebar: #0b0f17;
+  --bg-card: rgba(15, 23, 42, 0.7);
+  --bg-card-hover: rgba(30, 41, 59, 0.85);
+  --bg-card-solid: #0f172a;
+  --bg-input: rgba(15, 23, 42, 0.8);
+  --bg-glass: rgba(11, 15, 23, 0.75);
+  --backdrop-blur: blur(20px);
 
-  /* Accent & Status Colors */
-  --accent-primary: #3b82f6;
+  /* Border & Glass Accents */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-highlight: rgba(255, 255, 255, 0.16);
+  --border-neon: rgba(59, 130, 246, 0.35);
+
+  /* Cyber & Neo Accents */
+  --accent-primary: #3b82f6;          /* Electric Blue */
   --accent-primary-hover: #2563eb;
-  --accent-primary-glow: rgba(59, 130, 246, 0.25);
+  --accent-primary-glow: rgba(59, 130, 246, 0.35);
   
-  --accent-purple: #8b5cf6;
-  --accent-purple-glow: rgba(139, 92, 246, 0.25);
+  --accent-purple: #8b5cf6;           /* Cyber Violet */
+  --accent-purple-glow: rgba(139, 92, 246, 0.35);
 
+  --accent-cyan: #06b6d4;             /* Holographic Cyan */
+  --accent-cyan-glow: rgba(6, 182, 212, 0.35);
+
+  --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%);
+  --accent-gradient-subtle: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+
+  /* Status Colors */
   --status-success: #10b981;
   --status-success-bg: rgba(16, 185, 129, 0.12);
-  --status-success-border: rgba(16, 185, 129, 0.3);
+  --status-success-border: rgba(16, 185, 129, 0.35);
 
   --status-warning: #f59e0b;
   --status-warning-bg: rgba(245, 158, 11, 0.12);
-  --status-warning-border: rgba(245, 158, 11, 0.3);
+  --status-warning-border: rgba(245, 158, 11, 0.35);
 
   --status-danger: #ef4444;
   --status-danger-bg: rgba(239, 68, 68, 0.12);
-  --status-danger-border: rgba(239, 68, 68, 0.3);
+  --status-danger-border: rgba(239, 68, 68, 0.35);
 
   --status-info: #06b6d4;
 
-  /* Typography Colors */
+  /* Typography */
   --text-main: #f8fafc;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
-  --text-inverse: #090d16;
+  --text-accent: #38bdf8;
+  --text-inverse: #07090e;
 
-  /* Chat Colors */
-  --bubble-user: #1e3a8a;
+  /* Chat Bubbles */
+  --bubble-user: linear-gradient(135deg, #1e3a8a 0%, #1e293b 100%);
+  --bubble-user-border: rgba(59, 130, 246, 0.35);
   --bubble-user-text: #ffffff;
-  --bubble-assistant: #131b2e;
-  --bubble-assistant-border: #1e293b;
+  
+  --bubble-assistant: rgba(15, 23, 42, 0.85);
+  --bubble-assistant-border: rgba(255, 255, 255, 0.09);
+  --bubble-assistant-text: #e2e8f0;
 
   /* Dimensions & Spacing */
-  --sidebar-width: 280px;
-  --inspector-width: 340px;
-  --header-height: 60px;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  --sidebar-width: 290px;
+  --inspector-width: 360px;
+  --header-height: 64px;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 26px;
+  --radius-full: 9999px;
 
   /* Transitions */
-  --transition-fast: 0.15s ease;
-  --transition-normal: 0.25s ease;
+  --transition-fast: 0.12s ease;
+  --transition-normal: 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   --transition-smooth: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -4px rgba(0, 0, 0, 0.6);
-  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.2);
+  /* Shadows & Holographic Glow */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.7);
+  --shadow-glow-blue: 0 0 24px rgba(59, 130, 246, 0.3);
+  --shadow-glow-cyan: 0 0 24px rgba(6, 182, 212, 0.25);
+  --shadow-glow-purple: 0 0 24px rgba(139, 92, 246, 0.25);
 }
 
-/* Light Theme Overrides */
+/* Light Theme Overrides (Adaptive Mode) */
 [data-theme="light"] {
   --bg-app: #f8fafc;
   --bg-sidebar: #ffffff;
-  --bg-card: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.85);
   --bg-card-hover: #f1f5f9;
+  --bg-card-solid: #ffffff;
   --bg-input: #f1f5f9;
+  --bg-glass: rgba(255, 255, 255, 0.8);
   --border-subtle: #e2e8f0;
   --border-highlight: #cbd5e1;
+  --border-neon: rgba(37, 99, 235, 0.3);
 
   --accent-primary: #2563eb;
   --accent-primary-hover: #1d4ed8;
@@ -82,15 +106,17 @@
   --text-main: #0f172a;
   --text-secondary: #475569;
   --text-muted: #94a3b8;
+  --text-accent: #0284c7;
   --text-inverse: #ffffff;
 
-  --bubble-user: #2563eb;
+  --bubble-user: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  --bubble-user-border: rgba(37, 99, 235, 0.4);
   --bubble-user-text: #ffffff;
   --bubble-assistant: #ffffff;
   --bubble-assistant-border: #e2e8f0;
+  --bubble-assistant-text: #1e293b;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  --shadow-glow: 0 0 20px rgba(37, 99, 235, 0.1);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
