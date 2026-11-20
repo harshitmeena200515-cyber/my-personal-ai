@@ -30,6 +30,8 @@ TEST_SUITES = [
     ("Phase 3 Autonomous Orchestration", "tests/test_phase3.py"),
     ("Phase 4 Final Acceptance & E2E", "tests/test_acceptance_e2e.py"),
     ("Phase 4 Deep Security & Intelligence", "tests/test_intelligence_and_security_deep.py"),
+    ("Two-Part Memory Engine (Phase 5)", "tests/test_memory_engine.py"),
+    ("Cross-Agent Verification Protocol (CAVP V3 / Phase 6)", "tests/test_cavp_v3.py"),
 ]
 
 
