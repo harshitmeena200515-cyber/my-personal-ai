@@ -15,8 +15,8 @@ from tools.base import BaseTool, ToolResult, ToolParameter, PermissionLevel
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 # Blocked paths and patterns
-_BLOCKED_NAMES = {".env", ".git", "__pycache__", ".venv", "node_modules", ".mypy_cache"}
-_BLOCKED_EXTENSIONS = {".pyc", ".pyo", ".db", ".sqlite", ".sqlite3"}
+_BLOCKED_NAMES = {".env", ".git", "__pycache__", ".venv", "node_modules", ".mypy_cache", "users"}
+_BLOCKED_EXTENSIONS = {".pyc", ".pyo", ".db", ".sqlite", ".sqlite3", ".db-wal", ".db-shm", ".key", ".pem"}
 _MAX_FILE_SIZE_BYTES = 512 * 1024  # 512 KB max read
 
 
@@ -26,12 +26,12 @@ def _is_path_safe(path: Path) -> str | None:
 
     # Must be inside project root
     try:
-        resolved.relative_to(_PROJECT_ROOT)
+        rel = resolved.relative_to(_PROJECT_ROOT)
     except ValueError:
-        return f"Access denied: path is outside the project directory."
+        return "Access denied: path is outside the project directory."
 
-    # Check each component against blocked names
-    for part in resolved.parts:
+    # Check each relative component against blocked names (prevents accessing data/users, .env, etc.)
+    for part in rel.parts:
         if part.lower() in _BLOCKED_NAMES:
             return f"Access denied: '{part}' is a restricted path."
 

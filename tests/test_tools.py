@@ -72,6 +72,17 @@ def test_file_reader_security_and_reading():
     res = asyncio.run(reader.execute({"path": "../../Windows/System32", "action": "read"}))
     assert res.success is False
     assert "outside" in res.error.lower() or "denied" in res.error.lower()
+
+    # BLOCKED: Multi-user data isolation (data/users)
+    res = asyncio.run(reader.execute({"path": "data/users/fake_id/workspace/secret.txt", "action": "read"}))
+    assert res.success is False
+    assert "restricted" in res.error.lower() or "denied" in res.error.lower()
+
+    # BLOCKED: Database file access
+    res = asyncio.run(reader.execute({"path": "data/app.db", "action": "read"}))
+    assert res.success is False
+    assert "restricted" in res.error.lower() or "denied" in res.error.lower()
+
     print("✅ test_file_reader_security_and_reading PASSED")
 
 

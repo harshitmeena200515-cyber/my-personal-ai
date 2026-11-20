@@ -37,6 +37,7 @@ ENV/
 *.sqlite3
 *.db-wal
 *.db-shm
+data/users/
 
 # IDE & OS
 .vscode/

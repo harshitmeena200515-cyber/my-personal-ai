@@ -12,7 +12,7 @@ from typing import Any, Dict, List
 from tools.base import BaseTool, ToolResult, ToolParameter, PermissionLevel
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
-_BLOCKED_NAMES = {".env", ".git", "__pycache__", ".venv"}
+_BLOCKED_NAMES = {".env", ".git", "__pycache__", ".venv", "users"}
 
 
 class CodeAnalyzerTool(BaseTool):
@@ -69,11 +69,11 @@ class CodeAnalyzerTool(BaseTool):
 
             # Security check
             try:
-                target.relative_to(_PROJECT_ROOT)
+                rel = target.relative_to(_PROJECT_ROOT)
             except ValueError:
                 return ToolResult(success=False, error="Access denied: outside project directory.")
 
-            for part in target.parts:
+            for part in rel.parts:
                 if part.lower() in _BLOCKED_NAMES:
                     return ToolResult(success=False, error=f"Access denied: '{part}' is restricted.")
 

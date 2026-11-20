@@ -20,8 +20,19 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from fastapi.testclient import TestClient
 from server import app
+from data.db import db
+from core.auth import create_user
+from core.sessions import create_session
 
 client = TestClient(app)
+
+# Authenticate test client for protected endpoints
+db.init_db()
+_test_user = db.fetch_one("SELECT id FROM users WHERE username = ?", ("phase3_test_user",))
+if not _test_user:
+    _test_user = create_user(username="phase3_test_user", password="StrongPassword123!", role="USER")
+_raw_token, _ = create_session(user_id=_test_user["id"])
+client.headers.update({"Authorization": f"Bearer {_raw_token}"})
 
 
 def test_tools_endpoint():

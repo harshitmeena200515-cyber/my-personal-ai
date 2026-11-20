@@ -27,6 +27,13 @@ class Settings(BaseSettings):
     # Paths
     APP_DB_PATH: str = "./data/app.db"
 
+    # Authentication & Session Settings
+    SESSION_TTL_SECONDS: int = 604800  # 7 days
+    SESSION_COOKIE_NAME: str = "session_token"
+    SESSION_COOKIE_SECURE: bool = False  # Set to True when served over HTTPS
+    SESSION_COOKIE_SAMESITE: str = "lax"
+    ALLOW_REGISTRATION: bool = True
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 
