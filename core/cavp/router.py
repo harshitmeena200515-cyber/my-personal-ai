@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from core.cavp.envelope import EphemeralVerificationEnvelope
 from core.cavp.scoring import RiskLevel, VerdictStatus, VerificationVerdict
 from core.cavp.verifiers import CodeVerifier, CybersecurityVerifier, FactVerifier
+from core.dpapi import dpapi_encrypt, dpapi_decrypt
 from core.logging import logger
 from data.db import db
 
@@ -25,12 +26,17 @@ class CAVPRouter:
 
     def __init__(self, db_instance=None):
         self.db = db_instance or db
-        self._session_key: bytes = secrets.token_bytes(32)  # Ephemeral 256-bit key
-        self._nonces: Dict[str, int] = {}                   # Track last seen nonce per agent
+        # Protect ephemeral session HMAC key in RAM via Windows DPAPI (ADR-004 / Phase 7)
+        self._encrypted_session_key: bytes = dpapi_encrypt(secrets.token_bytes(32))
+        self._nonces: Dict[str, int] = {}  # Track last seen nonce per agent
+
+    def _get_session_key(self) -> bytes:
+        """Decrypt session HMAC key from Windows DPAPI buffer."""
+        return dpapi_decrypt(self._encrypted_session_key)
 
     def rotate_session_key(self) -> None:
-        """Rotate transient session HMAC key."""
-        self._session_key = secrets.token_bytes(32)
+        """Rotate transient session HMAC key and re-encrypt under DPAPI."""
+        self._encrypted_session_key = dpapi_encrypt(secrets.token_bytes(32))
         logger.info("cavp_session_key_rotated")
 
     def create_envelope(
@@ -58,7 +64,7 @@ class CAVPRouter:
             ttl_ms=ttl_ms,
             nonce=current_nonce,
         )
-        envelope.sign(self._session_key)
+        envelope.sign(self._get_session_key())
         return envelope
 
     def route_and_verify(
@@ -71,7 +77,7 @@ class CAVPRouter:
         Returns: (VerificationVerdict, action_card_id or None)
         """
         # 1. Verify envelope authenticity & TTL
-        if not envelope.verify(self._session_key):
+        if not envelope.verify(self._get_session_key()):
             logger.warning("cavp_envelope_verification_failed", envelope_id=envelope.envelope_id)
             verdict = VerificationVerdict(
                 verifier_agent="router_auth",
