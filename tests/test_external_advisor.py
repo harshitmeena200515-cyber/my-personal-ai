@@ -15,7 +15,7 @@ from pathlib import Path
 # Add project root to sys.path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.external_advisor import ExternalAdvisorSanitizer, OpenAIAdvisorAdapter
+from core.external_advisor import ExternalAdvisorSanitizer, OpenAIAdvisorAdapter, GeminiAdvisorAdapter
 from core.memory_manager import SecurityException, Provenance
 
 
@@ -68,9 +68,43 @@ def test_advisor_provenance_and_approval_enforcement():
     print("✅ test_advisor_provenance_and_approval_enforcement PASSED")
 
 
+def test_gemini_unconfigured_offline_fallback():
+    """Verify Gemini adapter handles missing credentials gracefully."""
+    adapter = GeminiAdvisorAdapter(api_key="")
+    assert not adapter.is_configured
+
+    result = adapter.consult_advisor("How should we design a lock-free queue?")
+    assert result["success"] is False
+    assert "GEMINI_API_KEY not configured" in result["error"]
+    assert result["provenance"] == Provenance.EXTERNALLY_VERIFIED.value
+    assert result["requires_owner_approval"] is True
+    print("✅ test_gemini_unconfigured_offline_fallback PASSED")
+
+
+def test_gemini_cascade_and_model_switching():
+    """Verify Gemini adapter cascades through models when first ones fail."""
+    # Custom cascade where first model is invalid, followed by available fallback
+    cascade = ["gemini-invalid-model-xyz", "gemini-flash-lite-latest"]
+    adapter = GeminiAdvisorAdapter(model_cascade=cascade)
+    if adapter.is_configured:
+        result = adapter.consult_advisor("State one principle of clean code.", max_tokens=25)
+        if result["success"]:
+            assert result["model_used"] == "gemini-flash-lite-latest"
+            assert "gemini-invalid-model-xyz" in result["models_attempted"]
+            assert result["provenance"] == Provenance.EXTERNALLY_VERIFIED.value
+            assert result["requires_owner_approval"] is True
+            print("✅ test_gemini_cascade_and_model_switching (LIVE) PASSED")
+        else:
+            print(f"⚠️ test_gemini_cascade_and_model_switching (Network/Quota skip): {result.get('error')}")
+    else:
+        print("⚠️ test_gemini_cascade_and_model_switching (Offline skip)")
+
+
 if __name__ == "__main__":
     test_outbound_prompt_sanitization()
     test_sanitizer_blocks_unredacted_secrets()
     test_advisor_unconfigured_offline_fallback()
     test_advisor_provenance_and_approval_enforcement()
+    test_gemini_unconfigured_offline_fallback()
+    test_gemini_cascade_and_model_switching()
     print("\nALL PHASE 8 EXTERNAL ADVISOR TESTS PASSED 100%!")

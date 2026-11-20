@@ -146,5 +146,149 @@ class OpenAIAdvisorAdapter:
             }
 
 
-# Global adapter instance
-external_advisor = OpenAIAdvisorAdapter()
+# Global adapter instances
+openai_advisor = OpenAIAdvisorAdapter()
+
+
+class GeminiAdvisorAdapter:
+    """
+    Sandboxed, privacy-preserving adapter for Google AI Studio (Gemini) external advisor.
+    Implements automatic model switching and cascading fallback across available Gemini models.
+    """
+
+    DEFAULT_CASCADE = [
+        "gemini-flash-lite-latest",
+        "gemini-flash-latest",
+        "gemini-pro-latest",
+        "gemini-3-flash-preview",
+    ]
+    BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
+
+    def __init__(self, api_key: Optional[str] = None, model_cascade: Optional[List[str]] = None):
+        self._api_key = api_key if api_key is not None else self._load_key_from_env()
+        self.model_cascade = list(model_cascade) if model_cascade else list(self.DEFAULT_CASCADE)
+
+    @staticmethod
+    def _load_key_from_env() -> Optional[str]:
+        """Read GEMINI_API_KEY from environment or .env file."""
+        key = os.getenv("GEMINI_API_KEY")
+        if key:
+            return key
+
+        env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+        if os.path.exists(env_path):
+            try:
+                with open(env_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line.startswith("GEMINI_API_KEY="):
+                            return line.split("=", 1)[1].strip()
+            except Exception as e:
+                logger.warning("gemini_env_read_error", error=str(e))
+        return None
+
+    @property
+    def is_configured(self) -> bool:
+        """Check if a Gemini API key is configured."""
+        return bool(self._api_key and len(self._api_key) > 10)
+
+    def consult_advisor(
+        self,
+        prompt: str,
+        system_role: str = "You are an expert technical architecture advisor. Provide concise, safe advice.",
+        max_tokens: int = 300,
+        timeout_seconds: float = 12.0,
+        preferred_model: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Sanitize prompt, query Gemini advisor with automatic model fallback,
+        and package response with EXTERNALLY_VERIFIED provenance.
+        """
+        # 1. Outbound privacy-preserving sanitization
+        clean_prompt = ExternalAdvisorSanitizer.sanitize_outbound_prompt(prompt)
+
+        if not self.is_configured:
+            return {
+                "success": False,
+                "error": "GEMINI_API_KEY not configured. Advisor consultation unavailable in offline mode.",
+                "provenance": Provenance.EXTERNALLY_VERIFIED.value,
+                "advice": None,
+                "requires_owner_approval": True,
+            }
+
+        # 2. Build model queue with preferred_model first if requested
+        queue = list(self.model_cascade)
+        if preferred_model and preferred_model in queue:
+            queue.remove(preferred_model)
+            queue.insert(0, preferred_model)
+        elif preferred_model:
+            queue.insert(0, preferred_model)
+
+        payload_dict = {
+            "systemInstruction": {"parts": [{"text": system_role}]},
+            "contents": [{"parts": [{"text": clean_prompt}]}],
+            "generationConfig": {"maxOutputTokens": max_tokens},
+        }
+        data = json.dumps(payload_dict).encode("utf-8")
+        headers = {"Content-Type": "application/json"}
+
+        errors = []
+        models_attempted = []
+
+        for model in queue:
+            models_attempted.append(model)
+            url = f"{self.BASE_URL}/{model}:generateContent?key={self._api_key}"
+            req = urllib.request.Request(url, data=data, headers=headers)
+
+            try:
+                with urllib.request.urlopen(req, timeout=timeout_seconds) as response:
+                    res_json = json.loads(response.read().decode("utf-8"))
+                    candidates = res_json.get("candidates", [])
+                    if not candidates:
+                        errors.append(f"{model}: No candidates in response")
+                        continue
+
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    if not parts or "text" not in parts[0]:
+                        errors.append(f"{model}: Empty text in response parts")
+                        continue
+
+                    content = parts[0]["text"].strip()
+                    logger.info("gemini_advisor_response_received", model=model, attempted=models_attempted)
+
+                    return {
+                        "success": True,
+                        "advice": content,
+                        "provenance": Provenance.EXTERNALLY_VERIFIED.value,
+                        "confidence": 0.88,
+                        "model_used": model,
+                        "models_attempted": models_attempted,
+                        "sanitized_prompt": clean_prompt,
+                        "requires_owner_approval": True,
+                    }
+
+            except urllib.error.HTTPError as e:
+                err_body = e.read().decode("utf-8", errors="replace")
+                logger.warning("gemini_advisor_model_fail", model=model, code=e.code, error=err_body[:100])
+                errors.append(f"{model} (HTTP {e.code})")
+                # Continue loop to next model in cascade
+                continue
+            except Exception as e:
+                logger.warning("gemini_advisor_network_fail", model=model, error=str(e))
+                errors.append(f"{model} ({str(e)})")
+                continue
+
+        # If all models in cascade failed
+        return {
+            "success": False,
+            "error": f"All Gemini models in cascade failed: {', '.join(errors)}",
+            "provenance": Provenance.EXTERNALLY_VERIFIED.value,
+            "advice": None,
+            "models_attempted": models_attempted,
+            "requires_owner_approval": True,
+        }
+
+
+# Global adapter instances
+gemini_advisor = GeminiAdvisorAdapter()
+external_advisor = gemini_advisor  # Default to Gemini AI Studio as requested
