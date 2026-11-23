@@ -356,7 +356,8 @@
   transition: opacity var(--transition-normal);
 }
 
-.modal-overlay.active {
+.modal-overlay.active,
+.modal-overlay.visible {
   opacity: 1;
   pointer-events: auto;
 }

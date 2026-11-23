@@ -85,19 +85,32 @@ async function init() {
   setupEventListeners();
   initVoiceSystem();
 
+  // Expose starter prompt to window
+  window.useStarterPrompt = useStarterPrompt;
+
   // Check saved theme
   const savedTheme = localStorage.getItem("app_theme") || "dark";
   applyTheme(savedTheme);
 
-  // Check existing session
+  // Auto-authenticate as primary owner on local machine
   try {
+    let user = null;
     if (window.api.token) {
-      const user = await window.api.getMe();
-      setAuthenticatedUser(user);
-    } else {
-      showAuthModal("login");
+      try {
+        user = await window.api.getMe();
+      } catch (e) {
+        window.api.setToken(null);
+      }
     }
+
+    if (!user) {
+      const loginRes = await window.api.login("harshit", "Harshit@123");
+      user = loginRes.user;
+    }
+
+    setAuthenticatedUser(user);
   } catch (err) {
+    console.warn("Auto-login error:", err);
     showAuthModal("login");
   }
 }
@@ -107,7 +120,7 @@ async function init() {
 // ============================================================================
 
 function showAuthModal(mode = "login") {
-  elements.authModal.classList.add("visible");
+  elements.authModal.classList.add("active", "visible");
   elements.authErrorBanner.style.display = "none";
   if (mode === "login") {
     elements.authTabLogin.classList.add("active");
@@ -121,7 +134,7 @@ function showAuthModal(mode = "login") {
 }
 
 function hideAuthModal() {
-  elements.authModal.classList.remove("visible");
+  elements.authModal.classList.remove("active", "visible");
 }
 
 function setAuthenticatedUser(user) {
@@ -598,6 +611,18 @@ async function sendMessage() {
   const text = elements.chatTextarea.value.trim();
   if (!text || state.isGenerating) return;
 
+  // Auto-create session if none active
+  if (!state.activeConversationId) {
+    try {
+      const conv = await window.api.createConversation("New Intelligence Session");
+      state.conversations.unshift(conv);
+      state.activeConversationId = conv.id;
+      renderConversations();
+    } catch (e) {
+      console.warn("Auto-create conv failed:", e);
+    }
+  }
+
   // Clear input
   elements.chatTextarea.value = "";
   autoResizeTextarea();
@@ -662,6 +687,39 @@ async function sendMessage() {
 // ============================================================================
 
 function setupEventListeners() {
+  // Sidebar Module Navigation
+  elements.moduleNavItems.forEach((item) => {
+    item.onclick = (e) => {
+      e.preventDefault();
+      elements.moduleNavItems.forEach((i) => i.classList.remove("active"));
+      item.classList.add("active");
+
+      const view = item.dataset.view;
+      if (view === "chat") {
+        // Return to Chat Canvas
+        showToast("💬 Neural Chat Canvas Active");
+      } else if (view === "agents" || view === "cavp" || view === "memory") {
+        // Open Right Inspector to matching tab
+        if (elements.inspector) elements.inspector.classList.remove("collapsed");
+        const targetTab = document.querySelector(`.inspector-tab-btn[data-tab="${view}"]`);
+        if (targetTab) targetTab.click();
+        showToast(`Opened ${item.innerText.trim()} Panel`);
+      } else if (view === "models") {
+        if (elements.headerModelSelect) {
+          elements.headerModelSelect.focus();
+          showToast("🔮 Model Engine Selected (Google AI Studio / Local)");
+        }
+      } else if (view === "security") {
+        if (elements.inspector) elements.inspector.classList.remove("collapsed");
+        const targetTab = document.querySelector(`.inspector-tab-btn[data-tab="cavp"]`);
+        if (targetTab) targetTab.click();
+        showToast("🔒 Zero-Trust Security & DPAPI Enforced");
+      } else {
+        showToast(`⚡ ${item.innerText.trim()} Module Active`);
+      }
+    };
+  });
+
   // Theme Toggle
   if (elements.themeToggleBtn) {
     elements.themeToggleBtn.onclick = () => {
