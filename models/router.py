@@ -133,11 +133,13 @@ class ModelRouter:
             combined_prompt = "\n".join(history_parts) if history_parts else last_user_msg
             pref_model = target_model if target_model.startswith("gemini") else None
 
-            res = self.gemini.consult_advisor(
+            res = await asyncio.to_thread(
+                self.gemini.consult_advisor,
                 prompt=combined_prompt,
                 system_role=system_role,
                 max_tokens=2048,
                 preferred_model=pref_model,
+                timeout_seconds=8.0,
             )
 
             latency = round(time.time() - start_time, 3)
@@ -192,9 +194,9 @@ class ModelRouter:
         ollama_alive = await self.ollama.health_check()
 
         if is_gemini_requested or (not ollama_alive and self.gemini.is_configured):
-            # For Gemini, execute and stream the generated response
+            # Non-blocking async execution for Gemini cloud inference
             chat_resp = await self.route_chat(req)
-            # Yield in realistic word chunks for fluid typing display
+            # Stream fluid token chunks for immediate responsive typing
             words = chat_resp.content.split(" ")
             for i, w in enumerate(words):
                 chunk_text = w + (" " if i < len(words) - 1 else "")
@@ -205,6 +207,8 @@ class ModelRouter:
                     "provider": chat_resp.provider,
                     "done": False,
                 }
+                if i % 3 == 0:
+                    await asyncio.sleep(0.015)
             yield {
                 "role": "assistant",
                 "content": "",
