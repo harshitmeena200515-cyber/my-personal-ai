@@ -608,6 +608,7 @@ function useStarterPrompt(prompt) {
 // ============================================================================
 
 async function sendMessage() {
+  const handleSendMessage = sendMessage; // backwards compatibility alias
   const text = elements.chatTextarea.value.trim();
   if (!text || state.isGenerating) return;
 

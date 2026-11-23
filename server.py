@@ -89,8 +89,9 @@ async def serve_ui():
 async def health_check():
     """Verify local system and model engine health."""
     health_data = await model_router.get_system_health()
+    is_healthy = health_data.get("local_engine_online", False) or health_data.get("cloud_enabled", False)
     return {
-        "status": "healthy" if health_data["local_engine_online"] else "degraded",
+        "status": "healthy" if is_healthy else "degraded",
         "version": settings.VERSION,
         "host": settings.HOST,
         "port": settings.PORT,

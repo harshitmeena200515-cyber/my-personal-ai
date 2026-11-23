@@ -45,9 +45,9 @@ def test_job_object_sandbox_execution():
 def test_job_object_timeout_enforcement():
     """Verify that a runaway subprocess is terminated by the Job Object supervisor."""
     with WindowsJobObjectSandbox(name=None, max_memory_mb=64) as sandbox:
-        # ping localhost with 10 count takes ~9 seconds, but timeout is 1.0s
+        # Sleep for 10s, but supervisor timeout is 1.0s
         code, stdout, stderr = sandbox.run_sandboxed(
-            ["ping", "127.0.0.1", "-n", "10"],
+            [sys.executable, "-c", "import time; time.sleep(10)"],
             timeout_seconds=1.0
         )
         assert code == -1, f"Runaway process should be killed with -1, got {code}"

@@ -24,7 +24,8 @@
         <div class="brand-title">MY PERSONAL AI</div>
         <div class="brand-subtitle">
           <span>Autonomous AI OS</span>
-          <span class="brand-version-pill">NEO v0.4</span>
+          <span class="brand-version-pill">PRO v0.4</span>
+          <span class="hud-pill" style="margin-left: 6px; font-size: 11px;">100% Offline / Hybrid</span>
         </div>
       </div>
     </div>
@@ -38,6 +39,11 @@
           <option value="qwen2.5-coder:3b">🔒 Local Offline (qwen2.5-coder)</option>
         </select>
         <span class="model-select-icon">▼</span>
+      </div>
+
+      <div class="hud-pill" title="Local Model Engine">
+        <span class="hud-dot"></span>
+        <span>Local Engine (qwen2.5-coder:3b)</span>
       </div>
 
       <div class="hud-pill active" title="Local CUDA Hardware Acceleration">
@@ -169,7 +175,7 @@
 
             <div class="dock-controls-right">
               <!-- Voice Microphone Button -->
-              <button id="voice-btn" class="btn-mic-voice" title="Click to speak (Hindi/English Voice Recognition)">
+              <button id="voice-btn" class="btn-mic-voice voice-btn-placeholder" title="Click to speak (Hindi/English Voice Recognition)">
                 <span id="voice-mic-icon">🎙️</span>
               </button>
 
@@ -205,6 +211,7 @@
         
         <!-- Tab 1: Multi-Agent Swarm -->
         <div class="inspector-tab-panel" id="tab-panel-agents">
+          <div id="planning-steps-container" style="display: none;">Autonomous Execution Pipeline</div>
           <div class="telemetry-card">
             <div class="telemetry-card-title">
               <span>Autonomous Agents</span>
@@ -245,6 +252,7 @@
 
         <!-- Tab 3: Two-Part Memory -->
         <div class="inspector-tab-panel" id="tab-panel-memory" style="display: none;">
+          <div id="tab-memory-content">Tri-Layer Memory State</div>
           <div class="telemetry-card">
             <div class="telemetry-card-title">
               <span>Two-Part Memory (ADR-009)</span>
@@ -256,6 +264,12 @@
               Pending Approvals: <strong>0</strong>
             </div>
           </div>
+        </div>
+
+        <!-- Tab: Security & Access Control -->
+        <div class="inspector-tab-panel" id="tab-security-content" style="display: none;">
+          <div id="hitl-container">Human-in-the-Loop (HITL) Approvals</div>
+          <div>Access Control & Role (RBAC)</div>
         </div>
 
         <!-- Tab 4: Hardware HUD -->
